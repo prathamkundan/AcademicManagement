@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StudentService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.Services</a> &gt; <span class="el_source">StudentService.java</span></div><h1>StudentService.java</h1><pre class="source lang-java linenums">package org.academic.Services;
+
+import org.academic.ServicePack.DataObjects.StudentObject;
+import org.academic.ServicePack.StudentInterface;
+import org.academic.ServicePack.Utils.AppException;
+import org.academic.ServicePack.Utils.CourseStatus;
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.Grades;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+
+public class StudentService extends CommonService implements StudentInterface {
+    public StudentService(String url, String user, String password) throws AppException {
+<span class="fc" id="L17">        super(url, user, password);</span>
+<span class="fc" id="L18">    }</span>
+
+    @Override
+    public Boolean checkCourseStatus(String student_id, String course_id, CourseStatus status) throws AppException {
+        try {
+<span class="fc" id="L23">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT * FROM record r, offerings o WHERE r.offering_id = o.offering_id &quot; +
+                    &quot;AND r.student_id = ? AND o.course_id = ? AND r.status = ?&quot;
+            );
+
+<span class="fc" id="L28">            pstmt.setString(1, student_id);</span>
+<span class="fc" id="L29">            pstmt.setString(2, course_id);</span>
+<span class="fc" id="L30">            pstmt.setString(3, status.value);</span>
+<span class="fc" id="L31">            ResultSet rs = pstmt.executeQuery();</span>
+
+<span class="fc" id="L33">            return rs.next();</span>
+<span class="nc" id="L34">        } catch (SQLException e) {</span>
+<span class="nc" id="L35">            throw new AppException(&quot;Could not check if course passed&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public void addEnrollment(String student_id, String course_id, int year, int semester, CourseType type) throws AppException {
+        try {
+<span class="fc" id="L42">            int offering_id = getOfferingId(course_id, year, semester);</span>
+<span class="fc" id="L43">            PreparedStatement record_pstmt = conn.prepareStatement(</span>
+                &quot;INSERT INTO record (student_id, offering_id, status, grade, credit_option) &quot; +
+                    &quot;VALUES (?, ?, ?, ?, ?)&quot;
+            );
+
+<span class="fc" id="L48">            record_pstmt.setString(1, student_id);</span>
+<span class="fc" id="L49">            record_pstmt.setInt(2, offering_id);</span>
+<span class="fc" id="L50">            record_pstmt.setString(3, CourseStatus.ENROLLED.value);</span>
+<span class="fc" id="L51">            record_pstmt.setString(4, Grades.NA.grade);</span>
+<span class="fc" id="L52">            record_pstmt.setString(5, type.code);</span>
+
+<span class="fc" id="L54">            record_pstmt.executeUpdate();</span>
+<span class="fc" id="L55">        } catch (SQLException e) {</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">            if (e.getSQLState().equals(&quot;23505&quot;)) throw new AppException(&quot;Course already enrolled&quot;);</span>
+<span class="nc" id="L57">            throw new AppException(&quot;Could not add enrollment&quot;, e);</span>
+<span class="fc" id="L58">        }</span>
+<span class="fc" id="L59">    }</span>
+
+    @Override
+    public void removeEnrollment(String student_id, String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L64">            int offering_id = getOfferingId(course_id, year, semester);</span>
+<span class="fc" id="L65">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;DELETE FROM record WHERE student_id = ? AND offering_id = ?&quot;
+            );
+
+<span class="fc" id="L69">            pstmt.setString(1, student_id);</span>
+<span class="fc" id="L70">            pstmt.setInt(2, offering_id);</span>
+<span class="fc" id="L71">            int removed = pstmt.executeUpdate();</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (removed == 0) throw new AppException(&quot;Enrollment not found or already completed.&quot;);</span>
+
+<span class="nc" id="L75">        } catch (SQLException e) {</span>
+<span class="nc" id="L76">            throw new AppException(&quot;Could not un-enroll course.&quot;, e);</span>
+<span class="fc" id="L77">        }</span>
+<span class="fc" id="L78">    }</span>
+
+    @Override
+    public HashMap&lt;CourseType, Integer&gt; getCreditCompletion(String student_id) throws AppException {
+        try{
+<span class="fc" id="L83">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT SUM(cc.credits) as credit_sum, r.credit_option FROM record r, offerings o, course_catalogue cc &quot;+
+                    &quot;WHERE o.offering_id = r.offering_id AND o.course_id = cc.course_id AND r.student_id = ? AND r.status='PASSED' &quot;+
+                    &quot;group by r.credit_option &quot;
+            );
+
+<span class="fc" id="L89">            pstmt.setString(1, student_id);</span>
+<span class="fc" id="L90">            ResultSet rs = pstmt.executeQuery();</span>
+
+<span class="fc" id="L92">            HashMap&lt;CourseType, Integer&gt; completed_credits = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L94">                int credit_sum = rs.getInt(&quot;credit_sum&quot;);</span>
+<span class="fc" id="L95">                CourseType credit_option = CourseType.valueOf(rs.getString(&quot;credit_option&quot;));</span>
+<span class="fc" id="L96">                completed_credits.put(credit_option, credit_sum);</span>
+<span class="fc" id="L97">            }</span>
+<span class="fc" id="L98">            return completed_credits;</span>
+<span class="nc" id="L99">        } catch(SQLException e) {</span>
+<span class="nc" id="L100">            throw new AppException(&quot;Could not check if courses are graded&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public Boolean checkOffered(String student_id, String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L107">            StudentObject student = getStudentObject(student_id);</span>
+
+<span class="fc" id="L109">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT * FROM offerings o, offering_details od &quot; +
+                    &quot;WHERE o.offering_id = od.offering_id AND o.course_id = ? &quot; +
+                    &quot;AND od.batch = ? AND od.dept = ? AND o.semester = ? AND o.year = ?&quot;
+            );
+<span class="fc" id="L114">            pstmt.setString(1, course_id);</span>
+<span class="fc" id="L115">            pstmt.setInt(2, student.batch);</span>
+<span class="fc" id="L116">            pstmt.setString(3, student.department);</span>
+<span class="fc" id="L117">            pstmt.setInt(4, semester);</span>
+<span class="fc" id="L118">            pstmt.setInt(5, year);</span>
+
+<span class="fc" id="L120">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc" id="L121">            return rs.next();</span>
+<span class="nc" id="L122">        } catch (SQLException e) {</span>
+<span class="nc" id="L123">            throw new AppException(&quot;Could not check if course is offered&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public int getBaseCredits() throws AppException {
+        try {
+<span class="fc" id="L130">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT base_credits FROM credit_info&quot;
+            );
+
+<span class="fc" id="L134">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (rs.next()) {</span>
+<span class="fc" id="L136">                return rs.getInt(&quot;base_credits&quot;);</span>
+            } else {
+<span class="fc" id="L138">                throw new AppException(&quot;Could not get base credit limit&quot;);</span>
+            }
+<span class="nc" id="L140">        } catch (SQLException e) {</span>
+<span class="nc" id="L141">            throw new AppException(&quot;Could not get base credits&quot;, e);</span>
+        }
+    }
+    @Override
+    public double getCreditMultiplier() throws AppException {
+        try {
+<span class="fc" id="L147">            ResultSet rs = conn.prepareStatement(&quot;SELECT credit_multiplier FROM credit_info&quot;).executeQuery();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            if (rs.next()) {</span>
+<span class="fc" id="L149">                return rs.getDouble(&quot;credit_multiplier&quot;);</span>
+<span class="fc" id="L150">            } else throw new AppException(&quot;Credit multiplier not set&quot;);</span>
+<span class="nc" id="L151">        } catch (SQLException e) {</span>
+<span class="nc" id="L152">            throw new AppException(&quot;Could not get credit multiplier&quot;, e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

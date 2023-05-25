@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CLI.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic</a> &gt; <span class="el_source">CLI.java</span></div><h1>CLI.java</h1><pre class="source lang-java linenums">package org.academic;
+
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.Grades;
+import org.academic.ServicePack.Utils.Roles;
+
+import java.io.*;
+import java.util.Scanner;
+
+public class CLI {
+    public Scanner scanner;
+    public PrintStream writer;
+
+<span class="nc" id="L14">    public CLI(InputStream in, PrintStream out) {</span>
+<span class="nc" id="L15">        scanner = new Scanner(in);</span>
+<span class="nc" id="L16">        writer = new PrintStream(out);</span>
+<span class="nc" id="L17">    }</span>
+
+    public String scanString(String message) {
+<span class="nc" id="L20">        diString(message);</span>
+<span class="nc" id="L21">        return scanner.nextLine();</span>
+    }
+
+    public void dBreak(){
+<span class="nc" id="L25">        dString(&quot;-&quot;.repeat(55));</span>
+<span class="nc" id="L26">    }</span>
+
+    public int scanInt(String message) {
+        while (true) {
+            try {
+<span class="nc" id="L31">                diString(message);</span>
+<span class="nc" id="L32">                String scannedInput = scanner.nextLine();</span>
+<span class="nc" id="L33">                return Integer.parseInt(scannedInput);</span>
+<span class="nc" id="L34">            } catch (Exception e) {</span>
+<span class="nc" id="L35">                dString(&quot;Could not read integer&quot;);</span>
+<span class="nc" id="L36">            }</span>
+        }
+    }
+
+    public Roles scanRole(String message) {
+        while (true) {
+<span class="nc" id="L42">            diString(message);</span>
+<span class="nc" id="L43">            String scannedInput = scanner.nextLine();</span>
+            try {
+<span class="nc" id="L45">                return Roles.valueOf(scannedInput);</span>
+<span class="nc" id="L46">            } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L47">                dString(&quot;Could not read role&quot;);</span>
+            }
+<span class="nc" id="L49">        }</span>
+    }
+
+    public Grades scanGrade(String message) {
+        while (true) {
+<span class="nc" id="L54">            diString(message);</span>
+<span class="nc" id="L55">            String scannedInput = scanner.nextLine();</span>
+            try {
+<span class="nc" id="L57">                return Grades.get(scannedInput);</span>
+<span class="nc" id="L58">            } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L59">                dString(&quot;Could not read grade&quot;);</span>
+            }
+<span class="nc" id="L61">        }</span>
+    }
+
+    public CourseType scanCourseType(String message) {
+        while(true){
+<span class="nc" id="L66">            diString(message);</span>
+<span class="nc" id="L67">            String scannedInput = scanner.nextLine();</span>
+            try {
+<span class="nc" id="L69">                return CourseType.valueOf(scannedInput);</span>
+<span class="nc" id="L70">            } catch (IllegalArgumentException iae) {</span>
+<span class="nc" id="L71">                dString(&quot;Could not read course type&quot;);</span>
+            }
+<span class="nc" id="L73">        }</span>
+    }
+
+    public &lt;T&gt; void dString(T param) {
+<span class="nc" id="L77">        writer.println(param.toString());</span>
+<span class="nc" id="L78">    }</span>
+
+    public void printToFile(String output_dest, String param) {
+        try {
+<span class="nc" id="L82">            FileWriter file_writer = new FileWriter(output_dest, true);</span>
+<span class="nc" id="L83">            file_writer.write(param);</span>
+<span class="nc" id="L84">            file_writer.close();</span>
+<span class="nc" id="L85">        } catch (IOException ioe) {</span>
+<span class="nc" id="L86">            dString(&quot;Could not write to file&quot;);</span>
+<span class="nc" id="L87">        }</span>
+<span class="nc" id="L88">    }</span>
+
+    public &lt;T&gt; void diString(T param) {
+<span class="nc" id="L91">        writer.print(param.toString());</span>
+<span class="nc" id="L92">    }</span>
+
+    public void dError(Throwable e, int depth) {
+<span class="nc" id="L95">        dString(&quot;Error: &quot; + e.getMessage());</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        for (int i=1; i&lt;=depth; i++){</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            if (e.getCause() != null) {</span>
+<span class="nc" id="L98">                dString(&quot;\t&quot;.repeat(i) + &quot;Reason: &quot; + e.getCause().getMessage());</span>
+            }
+<span class="nc bnc" id="L100" title="All 2 branches missed.">            if (e.getCause() instanceof Exception) {</span>
+<span class="nc" id="L101">                e = e.getCause();</span>
+            }
+        }
+<span class="nc" id="L104">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

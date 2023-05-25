@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdminAgent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.Agents</a> &gt; <span class="el_source">AdminAgent.java</span></div><h1>AdminAgent.java</h1><pre class="source lang-java linenums">package org.academic.Agents;
+
+import org.academic.ServicePack.AdminInterface;
+import org.academic.ServicePack.DataObjects.*;
+import org.academic.ServicePack.Utils.AppException;
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.SemStatus;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class AdminAgent extends CommonAgent {
+    AdminInterface adminService;
+    public AdminAgent(AdminInterface adminService) {
+<span class="fc" id="L15">        super(adminService);</span>
+<span class="fc" id="L16">        this.adminService = adminService;</span>
+<span class="fc" id="L17">    }</span>
+
+    public void createNewSemester(int year, int semester) throws AppException {
+        try {
+<span class="pc bpc" id="L21" title="3 of 6 branches missed.">            if (year &lt; 0 || semester &lt; 0 || semester &gt;= 3) throw new AppException(&quot;Invalid year or semester&quot;);</span>
+            SessionObject currentSemester;
+            SemStatus semester_status;
+            try {
+<span class="fc" id="L25">                currentSemester = adminService.getCurrentSemesterData();</span>
+<span class="fc" id="L26">                semester_status = currentSemester.status;</span>
+<span class="fc" id="L27">            } catch (AppException ignored) {</span>
+<span class="fc" id="L28">                adminService.addNewSemester(year, semester);</span>
+<span class="fc" id="L29">                return;</span>
+<span class="fc" id="L30">            }</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">            if (semester_status != SemStatus.COMPLETED) throw new AppException(&quot;Please end the current semester.&quot;);</span>
+<span class="fc" id="L32">            adminService.addNewSemester(year, semester);</span>
+<span class="fc" id="L33">        } catch (AppException e) {</span>
+<span class="fc" id="L34">            throw new AppException(&quot;Could not start a new semester&quot;, e);</span>
+<span class="fc" id="L35">        }</span>
+<span class="fc" id="L36">    }</span>
+
+    public void updateSemesterStatus() throws AppException {
+        try {
+<span class="fc" id="L40">            SessionObject currentSemester = adminService.getCurrentSemesterData();</span>
+<span class="fc" id="L41">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L42">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L43">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            if (semester_status == SemStatus.COMPLETED) {</span>
+<span class="fc" id="L45">                throw new AppException(&quot;The current semester is already completed. Please start a new semester&quot;);</span>
+            }
+            SemStatus newStatus;
+<span class="pc bpc" id="L48" title="1 of 5 branches missed.">            switch (semester_status) {</span>
+<span class="fc" id="L49">                case PRE_REGISTRATION -&gt; newStatus = SemStatus.REGISTRATION;</span>
+<span class="fc" id="L50">                case REGISTRATION -&gt; newStatus = SemStatus.ONGOING;</span>
+<span class="fc" id="L51">                case ONGOING -&gt; newStatus = SemStatus.GRADING;</span>
+<span class="fc" id="L52">                case GRADING -&gt; newStatus = SemStatus.COMPLETED;</span>
+<span class="nc" id="L53">                default -&gt; throw new AppException(&quot;Invalid semester status&quot;);</span>
+            }
+<span class="fc" id="L55">            adminService.updateSemesterPhase(newStatus, current_year, current_semester);</span>
+<span class="fc" id="L56">        } catch (AppException ae) {</span>
+<span class="fc" id="L57">            throw new AppException(&quot;Could not update semester status&quot;, ae);</span>
+<span class="fc" id="L58">        }</span>
+<span class="fc" id="L59">    }</span>
+
+    public void createStudent(String student_id, String student_name, String password, String department)
+        throws AppException {
+        try {
+<span class="fc" id="L64">            SessionObject currentSemester = adminService.getCurrentSemesterData();</span>
+<span class="fc" id="L65">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L66">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L67">            int current_semester = currentSemester.semester;</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">            if (current_semester != 1) throw new AppException(&quot;Can only register students at the start of a new year&quot;);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (semester_status != SemStatus.PRE_REGISTRATION) throw new AppException(&quot;Cannot enroll students in this phase.&quot;);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (adminService.getUGCurriculum(current_year).size() == 0)</span>
+<span class="fc" id="L71">                throw new AppException(&quot;Cannot enroll students as there is no UG curriculum for this batch.&quot;);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (adminService.getCoreCourses(current_year, department).size() == 0)</span>
+<span class="fc" id="L73">                throw new AppException(&quot;Cannot enroll students as there is no core course for this batch.&quot;);</span>
+
+<span class="fc" id="L75">            UserObject student = new StudentObject(</span>
+<span class="fc" id="L76">                student_id, student_name, student_id.toLowerCase() + &quot;@iitrpr.ac.in&quot;,</span>
+                &quot; &quot;, department, current_year);
+<span class="fc" id="L78">            adminService.addUser(student, password);</span>
+<span class="fc" id="L79">        } catch (AppException ae) {</span>
+            try{
+<span class="pc" id="L81">                adminService.removeUser(student_id);} catch (AppException ignored) {}</span>
+<span class="fc" id="L82">            throw new AppException(&quot;Could not create student.&quot;, ae);</span>
+<span class="fc" id="L83">        }</span>
+<span class="fc" id="L84">    }</span>
+
+    public void createFaculty(String faculty_id, String faculty_name, String password, String department)
+        throws AppException {
+        try {
+<span class="fc" id="L89">            UserObject faculty = new FacultyObject(</span>
+<span class="fc" id="L90">                faculty_id, faculty_name, faculty_id.toLowerCase() + &quot;@iitrpr.ac.in&quot;,</span>
+                &quot; &quot;, department);
+<span class="fc" id="L92">            adminService.addUser(faculty, password);</span>
+<span class="fc" id="L93">        } catch (AppException ae) {</span>
+<span class="fc" id="L94">            throw new AppException(&quot;Could not create faculty.&quot;, ae);</span>
+<span class="fc" id="L95">        }</span>
+<span class="fc" id="L96">    }</span>
+
+    public void createAdmin(String admin_id, String admin_name, String password) throws AppException {
+        try {
+<span class="fc" id="L100">            UserObject admin = new AdminObject(</span>
+<span class="fc" id="L101">                admin_id, admin_name, admin_id.toLowerCase() + &quot;@iitrpr.ac.in&quot;,</span>
+                &quot; &quot;);
+<span class="fc" id="L103">            adminService.addUser(admin, password);</span>
+<span class="fc" id="L104">        } catch (AppException ae) {</span>
+<span class="fc" id="L105">            throw new AppException(&quot;Could not create admin course.&quot;, ae);</span>
+<span class="fc" id="L106">        }</span>
+<span class="fc" id="L107">    }</span>
+
+    public void removeUser(String user_id) throws AppException {
+        try {
+<span class="fc" id="L111">            adminService.removeUser(user_id);</span>
+<span class="nc" id="L112">        } catch (AppException ae) {</span>
+<span class="nc" id="L113">            throw new AppException(&quot;Could not remove user&quot;,ae);</span>
+<span class="fc" id="L114">        }</span>
+<span class="fc" id="L115">    }</span>
+
+    public void createCourse(String course_id, String course_name, String course_dept, int lectures, int tutorials,
+                             int practicals, int credits) throws AppException {
+        try {
+<span class="fc" id="L120">            String ltp = String.format(&quot;%d-%d-%d&quot;, lectures, tutorials, practicals);</span>
+<span class="fc" id="L121">            CourseObject course = new CourseObject(course_id, course_name, course_dept, ltp, credits);</span>
+<span class="fc" id="L122">            adminService.addCourse(course);</span>
+<span class="fc" id="L123">        } catch (AppException ae) {</span>
+<span class="fc" id="L124">            throw new AppException(&quot;Could not create a course&quot;, ae);</span>
+<span class="fc" id="L125">        }</span>
+<span class="fc" id="L126">    }</span>
+
+    public void addPreRequisites(String course_id, String pre_reqs) throws AppException {
+        try {
+<span class="fc" id="L130">            adminService.addCoursePrerequisite(course_id, pre_reqs);</span>
+<span class="fc" id="L131">        } catch (AppException ae) {</span>
+<span class="fc" id="L132">            throw new AppException(&quot;Could not add pre-requisites&quot;, ae);</span>
+<span class="fc" id="L133">        }</span>
+<span class="fc" id="L134">    }</span>
+
+    public void removeCoursePrerequisite(String course_id) throws AppException {
+        try {
+<span class="fc" id="L138">            adminService.removeCoursePrerequisites(course_id);</span>
+<span class="fc" id="L139">        } catch (AppException ae) {</span>
+<span class="fc" id="L140">            throw new AppException(&quot;Could not remove course pre-requisites&quot;, ae);</span>
+<span class="fc" id="L141">        }</span>
+<span class="fc" id="L142">    }</span>
+
+    public void updateUGCurriculum(int batch, HashMap&lt;CourseType, Integer&gt; ug_requirements)
+        throws AppException {
+        try{
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            if (ug_requirements.size() == 0) throw new AppException(&quot;UG curriculum cannot be empty&quot;);</span>
+<span class="fc" id="L148">            adminService.updateUGCurriculum(batch, ug_requirements);</span>
+<span class="fc" id="L149">        } catch(AppException ae){</span>
+<span class="fc" id="L150">            throw new AppException(&quot;Could not update UG curriculum&quot;, ae);</span>
+<span class="fc" id="L151">        }</span>
+<span class="fc" id="L152">    }</span>
+
+    public void updateCoreCourseRequirements(int batch, String dept, ArrayList&lt;String&gt; core_courses)
+        throws AppException {
+        try{
+<span class="fc bfc" id="L157" title="All 2 branches covered.">            if (core_courses.size() == 0) throw new AppException(&quot;Core courses cannot be empty&quot;);</span>
+<span class="fc" id="L158">            adminService.updateCoreCourses(batch, dept, core_courses);</span>
+<span class="fc" id="L159">        } catch(AppException ae){</span>
+<span class="fc" id="L160">            throw new AppException(&quot;Could not update UG curriculum&quot;, ae);</span>
+<span class="fc" id="L161">        }</span>
+<span class="fc" id="L162">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

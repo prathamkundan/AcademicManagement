@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CommonAgent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.UserAgents</a> &gt; <span class="el_source">CommonAgent.java</span></div><h1>CommonAgent.java</h1><pre class="source lang-java linenums">package org.academic.UserAgents;
+
+import org.academic.ServicePack.CommonInterface;
+import org.academic.ServicePack.DataObjects.CourseObject;
+import org.academic.ServicePack.DataObjects.RecordObject;
+import org.academic.ServicePack.DataObjects.SessionObject;
+import org.academic.ServicePack.DataObjects.UserObject;
+import org.academic.ServicePack.Utils.AppException;
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.Grades;
+import org.academic.ServicePack.Utils.Roles;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class CommonAgent {
+    CommonInterface commonService;
+<span class="fc" id="L18">    public CommonAgent(CommonInterface commonService) {</span>
+<span class="fc" id="L19">        this.commonService = commonService;</span>
+<span class="fc" id="L20">    }</span>
+
+    public SessionObject getCurrentSemesterData() throws AppException {
+        try {
+<span class="fc" id="L24">            return commonService.getCurrentSemesterData();</span>
+<span class="fc" id="L25">        } catch (AppException ae) {</span>
+<span class="fc" id="L26">            throw new AppException(&quot;Could not get current semester data&quot;, ae);</span>
+        }
+    }
+
+    public ArrayList&lt;SessionObject&gt; getAllSemesterData() throws AppException {
+        try {
+<span class="fc" id="L32">            return commonService.getAllSemesterData();</span>
+<span class="fc" id="L33">        } catch (AppException ae) {</span>
+<span class="fc" id="L34">            throw new AppException(&quot;Could not get all semester data&quot;, ae);</span>
+        }
+    }
+
+    public UserObject getUserObject(String user_id) throws AppException {
+        try {
+<span class="fc" id="L40">            return commonService.getStudentObject(user_id);</span>
+<span class="fc" id="L41">        } catch (AppException ignored) {}</span>
+        try {
+<span class="fc" id="L43">            return commonService.getFacultyObject(user_id);</span>
+<span class="fc" id="L44">        } catch (AppException ignored) {}</span>
+        try {
+<span class="fc" id="L46">            return commonService.getAdminObject(user_id);</span>
+<span class="fc" id="L47">        } catch (AppException e) {</span>
+<span class="fc" id="L48">            throw new AppException(&quot;Could not find user: &quot; + user_id);</span>
+        }
+    }
+
+    public HashMap&lt;CourseObject, Integer&gt; getCourseConstraints(String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L54">            return commonService.getCourseConstraints(course_id, year, semester);</span>
+<span class="fc" id="L55">        } catch (AppException ae) {</span>
+<span class="fc" id="L56">            throw new AppException(&quot;Could not get course constraints&quot;, ae);</span>
+        }
+    }
+
+    public ArrayList&lt;CourseObject&gt; getCoursePrerequisites(String course_id) throws AppException {
+        try {
+<span class="fc" id="L62">            return commonService.getCoursePrerequisites(course_id);</span>
+<span class="fc" id="L63">        } catch (AppException ae) {</span>
+<span class="fc" id="L64">            throw new AppException(&quot;Could not get course prerequisites&quot;, ae);</span>
+        }
+    }
+
+    public CourseObject getCourseObject(String course_id) throws AppException {
+        try {
+<span class="fc" id="L70">            return commonService.getCourseObject(course_id);</span>
+<span class="fc" id="L71">        } catch (AppException ae) {</span>
+<span class="fc" id="L72">            throw new AppException(&quot;Could not get course data&quot;, ae);</span>
+        }
+    }
+
+    public ArrayList&lt;CourseObject&gt; getAllCourses() throws AppException {
+        try {
+<span class="fc" id="L78">            return commonService.getAllCourses();</span>
+<span class="fc" id="L79">        } catch (AppException ae) {</span>
+<span class="fc" id="L80">            throw new AppException(&quot;Could not get all courses&quot;, ae);</span>
+        }
+    }
+
+    public ArrayList&lt;CourseObject&gt; getCoreCourses(int batch, String dept) throws AppException {
+        try {
+<span class="fc" id="L86">            return commonService.getCoreCourses(batch, dept);</span>
+<span class="fc" id="L87">        } catch (AppException ae) {</span>
+<span class="fc" id="L88">            throw new AppException(&quot;Could not get core courses&quot;, ae);</span>
+        }
+    }
+
+    public HashMap&lt;CourseType, Integer&gt; getUGCurriculum(int batch) throws AppException {
+        try {
+<span class="fc" id="L94">            return commonService.getUGCurriculum(batch);</span>
+<span class="fc" id="L95">        } catch (AppException ae) {</span>
+<span class="fc" id="L96">            throw new AppException(&quot;Could not get UG curriculum&quot;, ae);</span>
+        }
+    }
+
+    public void updateInfo(UserObject newUserData, String password) throws AppException {
+        try {
+<span class="fc" id="L102">            commonService.updateInfo(newUserData, password);</span>
+<span class="fc" id="L103">        } catch (AppException ae) {</span>
+<span class="fc" id="L104">            throw new AppException(&quot;Could not update user data&quot;, ae);</span>
+<span class="fc" id="L105">        }</span>
+<span class="fc" id="L106">    }</span>
+
+    public ArrayList&lt;RecordObject&gt; getCourseRecord(String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L110">            return commonService.getCourseRecord(course_id, year, semester);</span>
+<span class="fc" id="L111">        } catch (AppException ae) {</span>
+<span class="fc" id="L112">            throw new AppException(&quot;Could not get course record&quot;, ae);</span>
+        }
+    }
+
+    public ArrayList&lt;RecordObject&gt; getSemesterRecords(String student_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L118">            ArrayList&lt;CourseObject&gt; courses = commonService.getEnrolledCourses(student_id, year, semester);</span>
+<span class="fc" id="L119">            ArrayList&lt;RecordObject&gt; records = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            for (CourseObject course : courses) records.add(commonService.getRecordObject(student_id, course.course_id, year, semester));</span>
+<span class="fc" id="L121">            return records;</span>
+<span class="fc" id="L122">        } catch (AppException e) {</span>
+<span class="fc" id="L123">            throw new AppException(&quot;Could not get semester records&quot;, e);</span>
+        }
+    }
+
+    public double getSGPA(String student_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L129">            double cum_credits = 0;</span>
+<span class="fc" id="L130">            double cum_grade = 0;</span>
+<span class="fc" id="L131">            ArrayList&lt;CourseObject&gt; enrolled_courses = commonService.getEnrolledCourses(student_id, year, semester);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            for (CourseObject course : enrolled_courses) {</span>
+<span class="fc" id="L133">                int offering_id = commonService.getOfferingId(course.course_id, year, semester);</span>
+
+<span class="fc" id="L135">                cum_credits += course.credits;</span>
+<span class="fc" id="L136">                cum_grade += commonService.getGrade(student_id, offering_id).value * course.credits;</span>
+<span class="fc" id="L137">            }</span>
+<span class="fc" id="L138">            return cum_grade/cum_credits;</span>
+<span class="fc" id="L139">        } catch (AppException e){</span>
+<span class="fc" id="L140">            throw new AppException(&quot;Could not get SGPA&quot;, e);</span>
+        }
+    }
+
+    public double getCGPA(String student_id) throws AppException {
+        try {
+<span class="fc" id="L146">            double cum_grade = 0.0;</span>
+<span class="fc" id="L147">            double cum_credits = 0.0;</span>
+
+<span class="fc" id="L149">            ArrayList&lt;CourseObject&gt; all_courses = getAllCourses();</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            for (CourseObject course : all_courses) {</span>
+<span class="fc" id="L151">                Grades grade = commonService.getGrade(student_id, course.course_id);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">                if (grade.value &gt; 4) {</span>
+<span class="fc" id="L153">                    cum_credits += course.credits;</span>
+<span class="fc" id="L154">                    cum_grade += grade.value * course.credits;</span>
+                }
+<span class="fc" id="L156">            }</span>
+
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">            if (cum_credits == 0) return 0.0;</span>
+<span class="fc" id="L159">            return cum_grade / cum_credits;</span>
+<span class="fc" id="L160">        } catch (AppException e) {</span>
+<span class="fc" id="L161">            throw new AppException(&quot;Could not get CGPA&quot;, e);</span>
+        }
+    }
+
+    public UserObject loginUser(String user_id, Roles role, String password) throws AppException {
+        try {
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            if (commonService.verifyUser(user_id, role, password)){</span>
+<span class="fc" id="L168">                commonService.logAction(user_id, &quot;LOGIN&quot;);</span>
+<span class="fc" id="L169">                return getUserObject(user_id);</span>
+            } else {
+<span class="fc" id="L171">                throw new AppException(&quot;Invalid credentials&quot;);</span>
+            }
+<span class="fc" id="L173">        } catch (AppException ae) {</span>
+<span class="fc" id="L174">            throw new AppException(&quot;Could not login user&quot;, ae);</span>
+        }
+    }
+
+    public void logoutUser(String user_id) throws AppException {
+        try {
+<span class="fc" id="L180">            commonService.logAction(user_id, &quot;LOGOUT&quot;);</span>
+<span class="fc" id="L181">        } catch (AppException ae) {</span>
+<span class="fc" id="L182">            throw new AppException(&quot;Could not logout user&quot;, ae);</span>
+<span class="fc" id="L183">        }</span>
+<span class="fc" id="L184">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

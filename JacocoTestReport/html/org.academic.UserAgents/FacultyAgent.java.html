@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FacultyAgent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.UserAgents</a> &gt; <span class="el_source">FacultyAgent.java</span></div><h1>FacultyAgent.java</h1><pre class="source lang-java linenums">package org.academic.UserAgents;
+
+import org.academic.ServicePack.DataObjects.CourseObject;
+import org.academic.ServicePack.DataObjects.SessionObject;
+import org.academic.ServicePack.FacultyInterface;
+import org.academic.ServicePack.Utils.AppException;
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.Grades;
+import org.academic.ServicePack.Utils.SemStatus;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class FacultyAgent extends CommonAgent {
+    FacultyInterface facultyService;
+    public FacultyAgent(FacultyInterface facultyService) {
+<span class="fc" id="L19">        super(facultyService);</span>
+<span class="fc" id="L20">        this.facultyService = facultyService;</span>
+<span class="fc" id="L21">    }</span>
+
+    public HashMap&lt;String, Grades&gt; getGradesFromCSV(BufferedReader br) throws AppException {
+        try {
+<span class="fc" id="L25">            HashMap&lt;String , Grades&gt; grades = new HashMap&lt;&gt;();</span>
+            String gradeString;
+<span class="fc bfc" id="L27" title="All 2 branches covered.">            while ((gradeString = br.readLine()) != null) {</span>
+<span class="fc" id="L28">                String[] splitGradeString = gradeString.split(&quot;,&quot;);</span>
+<span class="fc" id="L29">                String student_id = splitGradeString[0].strip();</span>
+<span class="fc" id="L30">                Grades grade = Grades.get(splitGradeString[1].strip());</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">                if (grade == null) throw new AppException(&quot;Could not read grade&quot;);</span>
+<span class="fc" id="L32">                grades.put(student_id, grade);</span>
+<span class="fc" id="L33">            }</span>
+<span class="fc" id="L34">            return grades;</span>
+<span class="nc" id="L35">        } catch (IOException ioe) {</span>
+<span class="nc" id="L36">            throw new AppException(&quot;Could not read file&quot;);</span>
+        }
+    }
+
+    public void gradeStudent(String faculty_id, String course_id, String student_id, Grades grade) throws AppException{
+        try {
+<span class="fc" id="L42">            SessionObject currentSemester = facultyService.getCurrentSemesterData();</span>
+<span class="fc" id="L43">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L44">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L45">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            if (semester_status != SemStatus.GRADING) throw new AppException(&quot;Can only grade when phase GRADING&quot;);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">            if (facultyService.isEnrolled(faculty_id, student_id, course_id, current_year, current_semester)) {</span>
+<span class="fc" id="L48">                facultyService.gradeStudent(faculty_id, course_id, student_id, current_year, current_semester, grade);</span>
+<span class="fc" id="L49">            } else throw new AppException(&quot;Student &quot; + student_id + &quot; is not enrolled in this course.&quot;);</span>
+<span class="fc" id="L50">        } catch (AppException ae) {</span>
+<span class="fc" id="L51">            throw new AppException(&quot;Could not grade student&quot;, ae);</span>
+<span class="fc" id="L52">        }</span>
+<span class="fc" id="L53">    }</span>
+
+    public void gradeStudents(String faculty_id, String course_id, HashMap&lt;String, Grades&gt; grades) throws AppException {
+        try {
+<span class="fc" id="L57">            SessionObject currentSemester = facultyService.getCurrentSemesterData();</span>
+<span class="fc" id="L58">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L59">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            for (String student_id : grades.keySet()) {</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">                if (!facultyService.isEnrolled(faculty_id, student_id, course_id, current_year, current_semester)) {</span>
+<span class="fc" id="L62">                    throw new AppException(&quot;Student &quot; + student_id + &quot; is not enrolled in this course.&quot;);</span>
+                }
+<span class="fc" id="L64">            }</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">            for (String student_id : grades.keySet()) {</span>
+<span class="fc" id="L66">                facultyService.gradeStudent(faculty_id, course_id, student_id, current_year, current_semester, grades.get(student_id));</span>
+<span class="fc" id="L67">            }</span>
+<span class="fc" id="L68">        } catch (AppException ae) {</span>
+<span class="fc" id="L69">            throw new AppException(&quot;Could not grade students&quot;, ae);</span>
+<span class="fc" id="L70">        }</span>
+<span class="fc" id="L71">    }</span>
+
+    public ArrayList&lt;CourseObject&gt; getOfferedCourses(String faculty_id, int year, int semester) throws AppException  {
+        try {
+<span class="fc" id="L75">            return facultyService.getOfferedCourses(faculty_id, year, semester);</span>
+<span class="fc" id="L76">        } catch (AppException ae) {</span>
+<span class="fc" id="L77">            throw new AppException(&quot;Could not fetch courses&quot;, ae);</span>
+        }
+    }
+
+    public void offerCourse(String faculty_id, String course_id) throws AppException  {
+        try {
+<span class="fc" id="L83">            SessionObject currentSemester = facultyService.getCurrentSemesterData();</span>
+<span class="fc" id="L84">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L85">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L86">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (semester_status != SemStatus.PRE_REGISTRATION) throw new AppException(&quot;Can only offer courses when phase PRE_REGISTRATION&quot;);</span>
+<span class="fc" id="L88">            facultyService.addOffering(faculty_id, course_id, current_year, current_semester);</span>
+<span class="fc" id="L89">        } catch (AppException ae) {</span>
+<span class="fc" id="L90">            throw new AppException(&quot;Could not offer course&quot;, ae);</span>
+<span class="fc" id="L91">        }</span>
+<span class="fc" id="L92">    }</span>
+
+    public void unOfferCourse(String faculty_id, String course_id) throws AppException  {
+        try {
+<span class="fc" id="L96">            SessionObject currentSemester = facultyService.getCurrentSemesterData();</span>
+<span class="fc" id="L97">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L98">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L99">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            if (semester_status != SemStatus.PRE_REGISTRATION) throw new AppException(&quot;Can only un-offer courses when phase PRE_REGISTRATION&quot;);</span>
+<span class="fc" id="L101">            facultyService.removeOffering(faculty_id, course_id, current_year, current_semester);</span>
+<span class="fc" id="L102">        } catch (AppException ae) {</span>
+<span class="fc" id="L103">            throw new AppException(&quot;Could not un-offer course&quot;, ae);</span>
+<span class="fc" id="L104">        }</span>
+<span class="fc" id="L105">    }</span>
+
+    public void offerTo(String faculty_id, String course_id,int batch, String dept_id, CourseType credit_option) throws AppException  {
+        try {
+<span class="fc" id="L109">            SessionObject currentSemester = facultyService.getCurrentSemesterData();</span>
+<span class="fc" id="L110">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L111">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L112">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (semester_status != SemStatus.PRE_REGISTRATION) throw new AppException(&quot;Cannot offer to a batch during this phase&quot;);</span>
+<span class="fc" id="L114">            facultyService.addOfferingTo(faculty_id, course_id, current_year, current_semester, batch, dept_id, credit_option);</span>
+<span class="fc" id="L115">        } catch (AppException ae) {</span>
+<span class="fc" id="L116">            throw new AppException(&quot;Could not offer course&quot;, ae);</span>
+<span class="fc" id="L117">        }</span>
+<span class="fc" id="L118">    }</span>
+
+    public void removeOfferTo(String faculty_id, String course_id,int batch, String dept_id) throws AppException  {
+        try {
+<span class="fc" id="L122">            SessionObject currentSemester = facultyService.getCurrentSemesterData();</span>
+<span class="fc" id="L123">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L124">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L125">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">            if (semester_status != SemStatus.PRE_REGISTRATION) throw new AppException(&quot;Cannot remove offering to batch/dept during this phase&quot;);</span>
+<span class="fc" id="L127">            facultyService.removeOfferingTo(faculty_id, course_id, current_year, current_semester, batch, dept_id);</span>
+<span class="fc" id="L128">        } catch (AppException ae) {</span>
+<span class="fc" id="L129">            throw new AppException(&quot;Could not un-offer course&quot;, ae);</span>
+<span class="fc" id="L130">        }</span>
+<span class="fc" id="L131">    }</span>
+
+    public void addConstraintToCourse(String faculty_id, String course_id, String pre_course_id, int min_grade) throws AppException  {
+        try {
+<span class="fc" id="L135">            SessionObject currentSemester = facultyService.getCurrentSemesterData();</span>
+<span class="fc" id="L136">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L137">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L138">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            if (semester_status != SemStatus.PRE_REGISTRATION) throw new AppException(&quot;Cannot add course constraint during this phase&quot;);</span>
+<span class="fc" id="L140">            facultyService.addOfferingConstraint(faculty_id, course_id, current_year, current_semester, pre_course_id, min_grade);</span>
+<span class="fc" id="L141">        } catch (AppException ae) {</span>
+<span class="fc" id="L142">            throw new AppException(&quot;Could not add course constraint&quot;, ae);</span>
+<span class="fc" id="L143">        }</span>
+<span class="fc" id="L144">    }</span>
+
+    public void removeConstraintToCourse(String faculty_id, String course_id, String pre_course_id) throws AppException  {
+        try {
+<span class="fc" id="L148">            SessionObject currentSemester = facultyService.getCurrentSemesterData();</span>
+<span class="fc" id="L149">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L150">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L151">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            if (semester_status != SemStatus.PRE_REGISTRATION)</span>
+<span class="fc" id="L153">                throw new AppException(&quot;Cannot remove course constraint during this phase&quot;);</span>
+<span class="fc" id="L154">            facultyService.removeOfferingConstraint(faculty_id, course_id, current_year, current_semester, pre_course_id);</span>
+<span class="fc" id="L155">        } catch (AppException ae) {</span>
+<span class="fc" id="L156">            throw new AppException(&quot;Could not remove course constraint&quot;, ae);</span>
+<span class="fc" id="L157">        }</span>
+<span class="fc" id="L158">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

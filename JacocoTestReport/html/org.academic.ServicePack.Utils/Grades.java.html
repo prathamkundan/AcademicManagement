@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Grades.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.ServicePack.Utils</a> &gt; <span class="el_source">Grades.java</span></div><h1>Grades.java</h1><pre class="source lang-java linenums">package org.academic.ServicePack.Utils;
+
+<span class="fc" id="L3">public enum Grades {</span>
+<span class="fc" id="L4">    A(10, &quot;A&quot;),</span>
+<span class="fc" id="L5">    AM(9, &quot;A-&quot;),</span>
+<span class="fc" id="L6">    B(8, &quot;B&quot;),</span>
+<span class="fc" id="L7">    BM(7, &quot;B-&quot;),</span>
+<span class="fc" id="L8">    C(6, &quot;C&quot;),</span>
+<span class="fc" id="L9">    CM(5, &quot;C-&quot;),</span>
+<span class="fc" id="L10">    D(4, &quot;D&quot;),</span>
+<span class="fc" id="L11">    DM(3, &quot;D-&quot;),</span>
+<span class="fc" id="L12">    E(2, &quot;E&quot;),</span>
+<span class="fc" id="L13">    EM(1, &quot;E-&quot;),</span>
+<span class="fc" id="L14">    F(0, &quot;F&quot;),</span>
+<span class="fc" id="L15">    NA(0, &quot;NA&quot;);</span>
+
+    public final String grade;
+    public final int value;
+
+<span class="fc" id="L20">    Grades(int value, String grade) {</span>
+<span class="fc" id="L21">        this.value = value;</span>
+<span class="fc" id="L22">        this.grade = grade;</span>
+<span class="fc" id="L23">    }</span>
+
+    public static Grades get(String grade) {
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        for (Grades g : Grades.values()) {</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">            if (g.grade.equals(grade)) {</span>
+<span class="fc" id="L28">                return g;</span>
+            }
+        }
+<span class="fc" id="L31">        return null;</span>
+    }
+    public static Grades get(int grade) {
+<span class="nc bnc" id="L34" title="All 2 branches missed.">        for (Grades g : Grades.values()) {</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">            if (g.value == grade) {</span>
+<span class="nc" id="L36">                return g;</span>
+            }
+        }
+<span class="nc" id="L39">        return null;</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

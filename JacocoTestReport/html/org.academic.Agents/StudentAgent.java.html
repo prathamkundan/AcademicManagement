@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StudentAgent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.Agents</a> &gt; <span class="el_source">StudentAgent.java</span></div><h1>StudentAgent.java</h1><pre class="source lang-java linenums">package org.academic.Agents;
+
+import org.academic.ServicePack.DataObjects.CourseObject;
+import org.academic.ServicePack.DataObjects.RecordObject;
+import org.academic.ServicePack.DataObjects.SessionObject;
+import org.academic.ServicePack.DataObjects.StudentObject;
+import org.academic.ServicePack.StudentInterface;
+import org.academic.ServicePack.Utils.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class StudentAgent extends CommonAgent {
+    StudentInterface studentService;
+    public StudentAgent(StudentInterface studentService) {
+<span class="fc" id="L16">        super(studentService);</span>
+<span class="fc" id="L17">        this.studentService = studentService;</span>
+<span class="fc" id="L18">    }</span>
+
+    private int getEnrolledCredits(String student_id, int year, int semester) throws AppException {
+<span class="fc" id="L21">        ArrayList&lt;CourseObject&gt; courses = studentService.getEnrolledCourses(student_id, year, semester);</span>
+<span class="fc" id="L22">        int credits = 0;</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        for (CourseObject course : courses) credits += course.credits;</span>
+<span class="fc" id="L24">        return credits;</span>
+    }
+
+    private int getCreditLimit(String student_id) throws AppException {
+<span class="fc" id="L28">        ArrayList&lt;SessionObject&gt; semesters = studentService.getAllSemesterData();</span>
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        if (semesters.size() &lt; 2) return studentService.getBaseCredits();</span>
+<span class="fc" id="L30">        SessionObject lastSemester = semesters.get(1);</span>
+<span class="fc" id="L31">        SessionObject secondLastSemester = semesters.get(2);</span>
+
+<span class="fc" id="L33">        int lastSemCredits = getEnrolledCredits(student_id, lastSemester.year, lastSemester.semester);</span>
+<span class="fc" id="L34">        int secondLastSemCredits = getEnrolledCredits(student_id, secondLastSemester.year, secondLastSemester.semester);</span>
+
+<span class="pc bpc" id="L36" title="2 of 4 branches missed.">        if (lastSemCredits == 0 || secondLastSemCredits == 0) return studentService.getBaseCredits();</span>
+<span class="fc" id="L37">        double credit_multiplier = studentService.getCreditMultiplier();</span>
+
+<span class="fc" id="L39">        return (int) (((lastSemCredits + secondLastSemCredits) / 2) * credit_multiplier);</span>
+    }
+
+    private Boolean checkCreditLimit(String student_id, String course_id, int year, int semester) throws AppException {
+<span class="fc" id="L43">        int credit_limit = getCreditLimit(student_id);</span>
+<span class="fc" id="L44">        CourseObject course = studentService.getCourseObject(course_id);</span>
+<span class="fc" id="L45">        int enrolledCredits = getEnrolledCredits(student_id, year, semester);</span>
+
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        return (enrolledCredits + course.credits &lt; credit_limit);</span>
+    }
+
+    private Boolean checkCoursePrerequisites(String student_id, String course_id) throws AppException {
+<span class="fc" id="L51">        ArrayList&lt;CourseObject&gt; pre_reqs = studentService.getCoursePrerequisites(course_id);</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (CourseObject pre_req : pre_reqs) {</span>
+<span class="fc" id="L53">            Grades grade = studentService.getGrade(student_id, pre_req.course_id);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">            if (grade.value &lt; 4) return false;</span>
+<span class="nc" id="L55">        }</span>
+<span class="fc" id="L56">        return true;</span>
+    }
+
+    private Boolean checkCourseConstraints(String student_id, String course_id, int year, int semester) throws AppException {
+<span class="fc" id="L60">        HashMap&lt;CourseObject, Integer&gt; constraints = studentService.getCourseConstraints(course_id, year, semester);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (CourseObject constraint : constraints.keySet()) {</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">            if (constraints.get(constraint) &gt; studentService.getGrade(student_id, constraint.course_id).value) {</span>
+<span class="fc" id="L63">                return false;</span>
+            }
+<span class="nc" id="L65">        }</span>
+<span class="fc" id="L66">        return true;</span>
+    }
+
+    public void enrollCourse(String student_id, String course_id) throws AppException {
+        try {
+<span class="fc" id="L71">            SessionObject currentSemester = studentService.getCurrentSemesterData();</span>
+<span class="fc" id="L72">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L73">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L74">            int current_semester = currentSemester.semester;</span>
+
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (semester_status != SemStatus.REGISTRATION) throw new AppException(&quot;Can only enroll during registration&quot;);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            if (!studentService.checkOffered(student_id, course_id, current_year, current_semester)) {</span>
+<span class="fc" id="L78">                throw new AppException(&quot;Course not offered&quot;);</span>
+            }
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">            if (studentService.checkCourseStatus(student_id, course_id, CourseStatus.PASSED)</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                || studentService.checkCourseStatus(student_id, course_id, CourseStatus.ENROLLED)) {</span>
+<span class="fc" id="L82">                throw new AppException(&quot;Course already registered or completed&quot;);</span>
+            }
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (!checkCoursePrerequisites(student_id, course_id)) {</span>
+<span class="fc" id="L86">                throw new AppException(&quot;Course prerequisites not satisfied&quot;);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            } else if (!checkCourseConstraints(student_id, course_id, current_year, current_semester)) {</span>
+<span class="fc" id="L88">                throw new AppException(&quot;Course constraints not satisfied. Please contact instructor&quot;);</span>
+            }
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (!checkCreditLimit(student_id, course_id, current_year, current_semester)) {</span>
+<span class="fc" id="L92">                throw new AppException(&quot;Credit Limit Exceeded&quot;);</span>
+            }
+
+<span class="fc" id="L95">            CourseType course_type = studentService.getCourseType(course_id,student_id, current_year, current_semester);</span>
+<span class="fc" id="L96">            studentService.addEnrollment(student_id, course_id, current_year, current_semester, course_type);</span>
+<span class="fc" id="L97">        } catch (AppException ae) {</span>
+<span class="fc" id="L98">            throw new AppException(&quot;Could not enroll course.&quot;, ae);</span>
+<span class="fc" id="L99">        }</span>
+<span class="fc" id="L100">    }</span>
+
+    public void unEnrollCourse(String student_id, String course_id) throws AppException {
+        try {
+<span class="fc" id="L104">            SessionObject currentSemester = studentService.getCurrentSemesterData();</span>
+<span class="fc" id="L105">            SemStatus semester_status = currentSemester.status;</span>
+<span class="fc" id="L106">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L107">            int current_semester = currentSemester.semester;</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (semester_status != SemStatus.REGISTRATION)</span>
+<span class="fc" id="L109">                throw new AppException(&quot;Can only un-enroll during registration&quot;);</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            if (!studentService.checkCourseStatus(student_id, course_id, CourseStatus.ENROLLED))</span>
+<span class="fc" id="L111">                throw new AppException(&quot;Course not enrolled&quot;);</span>
+<span class="fc" id="L112">            studentService.removeEnrollment(student_id, course_id, current_year, current_semester);</span>
+<span class="fc" id="L113">        } catch (AppException ae) {</span>
+<span class="fc" id="L114">            throw new AppException(&quot;Could not un-enroll course.&quot;, ae);</span>
+<span class="fc" id="L115">        }</span>
+<span class="fc" id="L116">    }</span>
+
+    public ArrayList&lt;RecordObject&gt; getAvailableCourses(String student_id) throws AppException {
+        try {
+<span class="fc" id="L120">            SessionObject currentSemester = studentService.getCurrentSemesterData();</span>
+<span class="fc" id="L121">            int current_year = currentSemester.year;</span>
+<span class="fc" id="L122">            int current_semester = currentSemester.semester;</span>
+
+<span class="fc" id="L124">            ArrayList&lt;CourseObject&gt; courses = studentService.getAllCourses();</span>
+<span class="fc" id="L125">            ArrayList&lt;RecordObject&gt; available_courses = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L127" title="All 2 branches covered.">            for (CourseObject course : courses) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">                if (studentService.checkOffered(student_id, course.course_id, current_year, current_semester)) {</span>
+<span class="fc" id="L129">                    available_courses.add(studentService.getRecordObject(student_id, course.course_id, current_year, current_semester));</span>
+                }
+<span class="fc" id="L131">            }</span>
+
+<span class="fc" id="L133">            return available_courses;</span>
+<span class="fc" id="L134">        } catch (AppException ae) {</span>
+<span class="fc" id="L135">            throw new AppException(&quot;Could not get available courses.&quot;, ae);</span>
+        }
+    }
+
+    public ArrayList&lt;CourseObject&gt; getRemainingCoreCourses(String student_id) throws AppException {
+        try {
+<span class="fc" id="L141">            StudentObject student = studentService.getStudentObject(student_id);</span>
+<span class="fc" id="L142">            ArrayList&lt;CourseObject&gt; core_courses = studentService.getCoreCourses(student.batch, student.department);</span>
+
+<span class="fc" id="L144">            ArrayList&lt;CourseObject&gt; course_status = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            for (CourseObject course : core_courses) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                if (studentService.getGrade(student_id, course.course_id).value &lt;= 4)</span>
+<span class="fc" id="L147">                    course_status.add(course);</span>
+<span class="fc" id="L148">            }</span>
+<span class="fc" id="L149">            return course_status;</span>
+<span class="fc" id="L150">        } catch (AppException ae) {</span>
+<span class="fc" id="L151">            throw new AppException(&quot;Could not get remaining core courses.&quot;, ae);</span>
+        }
+    }
+
+    public HashMap&lt;CourseType, Integer&gt; getRemainingUGCredits(String student_id) throws AppException {
+        try {
+<span class="fc" id="L157">            StudentObject student = studentService.getStudentObject(student_id);</span>
+<span class="fc" id="L158">            HashMap&lt;CourseType, Integer&gt; ug_courses = studentService.getUGCurriculum(student.batch);</span>
+<span class="fc" id="L159">            HashMap&lt;CourseType, Integer&gt; completed_credits = studentService.getCreditCompletion(student_id);</span>
+
+<span class="fc" id="L161">            HashMap&lt;CourseType, Integer&gt; remaining_credits = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">            for (CourseType course : ug_courses.keySet()) {</span>
+<span class="fc" id="L163">                Integer done = completed_credits.get(course);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">                if (done != null) {</span>
+<span class="fc" id="L165">                    int difference = ug_courses.get(course) - done;</span>
+<span class="fc" id="L166">                    remaining_credits.put(course, Math.max(difference, 0));</span>
+<span class="fc" id="L167">                } else remaining_credits.put(course, ug_courses.get(course));</span>
+<span class="fc" id="L168">            }</span>
+<span class="fc" id="L169">            return remaining_credits;</span>
+<span class="fc" id="L170">        } catch (AppException ae) {</span>
+<span class="fc" id="L171">            throw new AppException(&quot;Could not get remaining UG credits.&quot;, ae);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

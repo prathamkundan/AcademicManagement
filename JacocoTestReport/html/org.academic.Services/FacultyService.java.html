@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FacultyService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.Services</a> &gt; <span class="el_source">FacultyService.java</span></div><h1>FacultyService.java</h1><pre class="source lang-java linenums">package org.academic.Services;
+
+import org.academic.ServicePack.DataObjects.CourseObject;
+import org.academic.ServicePack.FacultyInterface;
+import org.academic.ServicePack.Utils.AppException;
+import org.academic.ServicePack.Utils.CourseStatus;
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.Grades;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+public class FacultyService extends CommonService implements FacultyInterface {
+    public FacultyService(String url, String user, String password) throws AppException {
+<span class="fc" id="L17">        super(url, user, password);</span>
+<span class="fc" id="L18">    }</span>
+
+    @Override
+    public int getOfferingId(String faculty_id, String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L23">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT o.offering_id as offering_id FROM offerings o &quot;+
+                    &quot;WHERE o.course_id = ? AND o.instructor = ? &quot;+
+                    &quot;AND o.semester = ? AND o.year = ?&quot;
+            );
+<span class="fc" id="L28">            pstmt.setString(1, course_id);</span>
+<span class="fc" id="L29">            pstmt.setString(2, faculty_id);</span>
+<span class="fc" id="L30">            pstmt.setInt(3, semester);</span>
+<span class="fc" id="L31">            pstmt.setInt(4, year);</span>
+
+<span class="fc" id="L33">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">            if (rs.next()){</span>
+<span class="fc" id="L35">                return rs.getInt(&quot;offering_id&quot;);</span>
+            } else {
+<span class="fc" id="L37">                throw new AppException(String.format(&quot;Offering (%s-%d-%d) by faculty not found&quot;,course_id, year, semester ));</span>
+            }
+<span class="nc" id="L39">        } catch(SQLException e) {</span>
+<span class="nc" id="L40">            throw new AppException(&quot;Could not get offering id&quot;, e);</span>
+        }
+    }
+
+    public ArrayList&lt;CourseObject&gt; getOfferedCourses(String faculty_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L46">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM offerings WHERE semester = ? AND year = ? AND instructor = ?&quot;);</span>
+<span class="fc" id="L47">            pstmt.setInt(1, semester);</span>
+<span class="fc" id="L48">            pstmt.setInt(2, year);</span>
+<span class="fc" id="L49">            pstmt.setString(3, faculty_id);</span>
+<span class="fc" id="L50">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc" id="L51">            ArrayList&lt;CourseObject&gt; offerings = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L53">                String offering = rs.getString(&quot;course_id&quot;);</span>
+<span class="fc" id="L54">                offerings.add(getCourseObject(offering));</span>
+<span class="fc" id="L55">            }</span>
+<span class="fc" id="L56">            return offerings;</span>
+<span class="nc" id="L57">        } catch (SQLException e) {</span>
+<span class="nc" id="L58">            throw new AppException(String.format(&quot;Could not get course offerings for %d-%d&quot;, year, semester) , e);</span>
+        }
+    }
+
+    @Override
+    public void addOffering(String faculty_id, String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L65">            PreparedStatement pstmt = conn.prepareStatement(&quot;INSERT INTO offerings (course_id, instructor, semester, year) VALUES (?, ?, ?, ?)&quot;);</span>
+<span class="fc" id="L66">            pstmt.setString(1, course_id);</span>
+<span class="fc" id="L67">            pstmt.setString(2, faculty_id);</span>
+<span class="fc" id="L68">            pstmt.setInt(3, semester);</span>
+<span class="fc" id="L69">            pstmt.setInt(4, year);</span>
+<span class="fc" id="L70">            pstmt.executeUpdate();</span>
+<span class="fc" id="L71">        } catch (SQLException e) {</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (e.getSQLState().equals(&quot;23505&quot;)) throw new AppException(String.format(&quot;Offering (%s-%d-%d) already exists&quot;, course_id, year, semester));</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            if (e.getSQLState().equals(&quot;23503&quot;)) throw new AppException(&quot;Course or faculty not found&quot;);</span>
+<span class="nc" id="L74">            throw new AppException(String.format(&quot;Could not add offering for: %s-%d-%d&quot;, course_id, year, semester), e);</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc" id="L76">    }</span>
+
+    @Override
+    public void removeOffering(String faculty_id, String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L81">            int offering_id = getOfferingId(faculty_id, course_id, year, semester);</span>
+<span class="fc" id="L82">            PreparedStatement pstmt = conn.prepareStatement(&quot;DELETE FROM offerings WHERE offering_id = ?&quot;);</span>
+<span class="fc" id="L83">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L84">            int deleted = pstmt.executeUpdate();</span>
+<span class="nc" id="L85">        } catch (SQLException e) {</span>
+<span class="nc" id="L86">            throw new AppException(String.format(&quot;Could not remove offering for: %s-%d-%d&quot;, course_id, year, semester), e);</span>
+<span class="fc" id="L87">        }</span>
+<span class="fc" id="L88">    }</span>
+
+    @Override
+    public void addOfferingConstraint(String faculty_id, String course_id, int year, int semester, String pre_course_id, int min_grade)
+        throws AppException {
+        try {
+<span class="fc" id="L94">            int offering_id = getOfferingId(faculty_id, course_id, year, semester);</span>
+<span class="fc" id="L95">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;INSERT INTO offering_constraints (offering_id, pre_course_id, min_grade) VALUES (?, ?, ?)&quot;
+            );
+<span class="fc" id="L98">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L99">            pstmt.setString(2, pre_course_id);</span>
+<span class="fc" id="L100">            pstmt.setInt(3, min_grade);</span>
+
+<span class="fc" id="L102">            pstmt.executeUpdate();</span>
+<span class="fc" id="L103">        } catch (SQLException e) {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            if (e.getSQLState().equals(&quot;23505&quot;))</span>
+<span class="fc" id="L105">                throw new AppException(&quot;There already exists a course constraint for this course&quot;);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">            if (e.getSQLState().equals(&quot;23503&quot;))</span>
+<span class="fc" id="L107">                throw new AppException(&quot;Pre-requisite course not found&quot;);</span>
+<span class="nc" id="L108">            else throw new AppException(&quot;Could not add offering constraint&quot;, e);</span>
+<span class="fc" id="L109">        }</span>
+<span class="fc" id="L110">    }</span>
+
+    @Override
+    public void removeOfferingConstraint(String faculty_id, String course_id, int year, int semester, String pre_course_id)
+        throws AppException {
+        try {
+<span class="fc" id="L116">            int offering_id = getOfferingId(faculty_id, course_id, year, semester);</span>
+<span class="fc" id="L117">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;DELETE FROM offering_constraints WHERE offering_id = ? AND pre_course_id = ?&quot;
+            );
+<span class="fc" id="L120">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L121">            pstmt.setString(2, pre_course_id);</span>
+
+<span class="fc" id="L123">            int deleted = pstmt.executeUpdate();</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            if (deleted == 0) {</span>
+<span class="fc" id="L125">                throw new AppException(&quot;There is no course constraint for this course&quot;);</span>
+            }
+<span class="nc" id="L127">        } catch (SQLException e) {</span>
+<span class="nc" id="L128">            throw new AppException(&quot;Could not add offering constraint&quot;, e);</span>
+<span class="fc" id="L129">        }</span>
+<span class="fc" id="L130">    }</span>
+
+    @Override
+    public void addOfferingTo(String faculty_id, String course_id, int year, int semester, int batch, String dept_id,
+                              CourseType credit_option)
+        throws AppException {
+        try {
+<span class="fc" id="L137">            int offering_id = getOfferingId(faculty_id, course_id, year, semester);</span>
+<span class="fc" id="L138">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;INSERT INTO OFFERING_DETAILS (offering_id, batch, dept, credit_option) VALUES (?, ?, ?, ?)&quot;
+            );
+
+<span class="fc" id="L142">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L143">            pstmt.setInt(2, batch);</span>
+<span class="fc" id="L144">            pstmt.setString(3, dept_id);</span>
+<span class="fc" id="L145">            pstmt.setString(4, credit_option.code);</span>
+
+<span class="fc" id="L147">            pstmt.executeUpdate();</span>
+<span class="fc" id="L148">        } catch (SQLException e) {</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">            if (e.getSQLState().equals(&quot;23505&quot;)) throw new AppException(&quot;Offering already exists.&quot;);</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">            if (e.getSQLState().equals(&quot;23503&quot;)) throw new AppException(&quot;Department not found.&quot;);</span>
+<span class="nc" id="L151">            else throw new AppException(&quot;Could not add offering.&quot;, e);</span>
+<span class="fc" id="L152">        }</span>
+<span class="fc" id="L153">    }</span>
+
+    @Override
+    public void removeOfferingTo(String faculty_id, String course_id, int year, int semester, int batch, String dept_id)
+        throws AppException {
+        try {
+<span class="fc" id="L159">            int offering_id = getOfferingId(faculty_id, course_id, year, semester);</span>
+<span class="fc" id="L160">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;DELETE FROM offering_details WHERE offering_id = ? AND batch = ? AND dept = ?&quot;
+            );
+
+<span class="fc" id="L164">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L165">            pstmt.setInt(2, batch);</span>
+<span class="fc" id="L166">            pstmt.setString(3, dept_id);</span>
+
+<span class="fc" id="L168">            int deleted = pstmt.executeUpdate();</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">            if (deleted == 0) {</span>
+<span class="fc" id="L170">                throw new AppException(&quot;Offering to department not found&quot;);</span>
+            }
+<span class="nc" id="L172">        } catch (SQLException e) {</span>
+<span class="nc" id="L173">            throw new AppException(&quot;Could not remove offering&quot;, e);</span>
+<span class="fc" id="L174">        }</span>
+<span class="fc" id="L175">    }</span>
+
+    @Override
+    public Boolean isEnrolled(String faculty_id, String student_id, String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L180">            int offering_id = getOfferingId(faculty_id, course_id, year, semester);</span>
+<span class="fc" id="L181">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT * FROM record WHERE student_id = ? AND offering_id = ?&quot;
+            );
+
+<span class="fc" id="L185">            pstmt.setString(1, student_id);</span>
+<span class="fc" id="L186">            pstmt.setInt(2, offering_id);</span>
+
+<span class="fc" id="L188">            ResultSet rs = pstmt.executeQuery();</span>
+
+<span class="fc" id="L190">            return rs.next();</span>
+<span class="nc" id="L191">        } catch (SQLException e) {</span>
+<span class="nc" id="L192">            throw new AppException(&quot;Could not check if student is enrolled.&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public void gradeStudent(String faculty_id, String course_id, String student_id, int year, int semester, Grades grade)
+        throws AppException {
+        try {
+<span class="fc" id="L200">            int offering_id = getOfferingId(faculty_id, course_id, year, semester);</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">            if (!isEnrolled(faculty_id, student_id, course_id, year, semester)) {</span>
+<span class="fc" id="L202">                throw new AppException(String.format(&quot;Student (%s) is not enrolled in the course (%s-%d-%d)&quot;,student_id, course_id, year, semester));</span>
+            }
+
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">            String status = grade.value &lt;= 4 ? CourseStatus.FAILED.value : CourseStatus.PASSED.value;</span>
+
+<span class="fc" id="L207">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;UPDATE record SET grade = ?, status = ? WHERE offering_id = ? AND student_id = ?&quot;
+            );
+
+<span class="fc" id="L211">            pstmt.setString(1, grade.grade);</span>
+<span class="fc" id="L212">            pstmt.setString(2, status);</span>
+<span class="fc" id="L213">            pstmt.setInt(3, offering_id);</span>
+<span class="fc" id="L214">            pstmt.setString(4, student_id);</span>
+
+<span class="fc" id="L216">            pstmt.executeUpdate();</span>
+<span class="nc" id="L217">        } catch (SQLException e) {</span>
+<span class="nc" id="L218">            throw new AppException(&quot;Could not grade student.&quot;, e);</span>
+<span class="fc" id="L219">        }</span>
+<span class="fc" id="L220">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

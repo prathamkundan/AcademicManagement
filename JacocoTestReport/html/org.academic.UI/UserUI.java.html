@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserUI.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.UI</a> &gt; <span class="el_source">UserUI.java</span></div><h1>UserUI.java</h1><pre class="source lang-java linenums">package org.academic.UI;
+
+import org.academic.UserAgents.CommonAgent;
+import org.academic.ServicePack.DataObjects.*;
+import org.academic.ServicePack.Utils.AppException;
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.Roles;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.TreeMap;
+
+public abstract class UserUI {
+    UserObject sessionUser;
+    private CommonAgent commonAgent;
+    protected TreeMap&lt;Integer, Runnable&gt; functionMap;
+    protected TreeMap&lt;Integer, String&gt; menuMap;
+    protected CLI CLI;
+<span class="fc" id="L19">    protected UserUI(CLI cli) {</span>
+<span class="fc" id="L20">        functionMap = new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L21">        menuMap = new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L22">        CLI = cli;</span>
+<span class="fc" id="L23">        map_action(this::logout, &quot;Logout&quot;);</span>
+<span class="fc" id="L24">        map_action(this::updateDetails, &quot;Update your details&quot;);</span>
+<span class="fc" id="L25">        map_action(this::viewContactDetails, &quot;View contact details for a user&quot;);</span>
+<span class="fc" id="L26">        map_action(this::viewAcademicReport, &quot;View Academic Record&quot;);</span>
+<span class="fc" id="L27">        map_action(this::viewSemesterReport, &quot;View Semester Results&quot;);</span>
+<span class="fc" id="L28">        map_action(this::viewAllCourses, &quot;View All Courses&quot;);</span>
+<span class="fc" id="L29">        map_action(this::viewCourseDetails, &quot;View Course Details&quot;);</span>
+<span class="fc" id="L30">        map_action(this::viewCourseReport, &quot;View Course Report&quot;);</span>
+<span class="fc" id="L31">        map_action(this::viewCoreCourses, &quot;View Core Courses&quot;);</span>
+<span class="fc" id="L32">        map_action(this::viewUGCurriculum, &quot;View UG Curriculum&quot;);</span>
+<span class="fc" id="L33">    }</span>
+
+    protected void map_action(Runnable action, String description) {
+<span class="fc" id="L36">        Integer key = functionMap.size();</span>
+<span class="fc" id="L37">        this.functionMap.put(key, action);</span>
+<span class="fc" id="L38">        this.menuMap.put(key, description);</span>
+<span class="fc" id="L39">    }</span>
+
+    protected void setCommonAgent(CommonAgent commonAgent) {
+<span class="fc" id="L42">        this.commonAgent = commonAgent;</span>
+<span class="fc" id="L43">    }</span>
+
+    public void displayActionMenu() {
+        while (true) {
+<span class="fc bfc" id="L47" title="All 2 branches covered.">            if (sessionUser == null){</span>
+<span class="fc" id="L48">                login();</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">                if (sessionUser == null) return;</span>
+            } else {
+<span class="fc bfc" id="L51" title="All 2 branches covered.">                for (Integer key : menuMap.keySet()) {</span>
+<span class="fc" id="L52">                    CLI.dString(key + &quot;. &quot; + menuMap.get(key));</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">                    if (key == 9) {</span>
+<span class="fc" id="L54">                        CLI.dBreak();</span>
+<span class="fc" id="L55">                        CLI.dString(sessionUser.role.value + &quot; ACTIONS:&quot;);</span>
+                    }
+<span class="fc" id="L57">                }</span>
+<span class="fc" id="L58">                int choice= CLI.scanInt(String.format(&quot;(%s) Enter your choice:&quot;, sessionUser.user_id));</span>
+<span class="fc" id="L59">                performAction(choice);</span>
+<span class="fc" id="L60">                CLI.dBreak();</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">                if (sessionUser == null) return;</span>
+<span class="nc" id="L62">            }</span>
+        }
+    }
+
+    protected void performAction(Integer choice) {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (functionMap.containsKey(choice)) {</span>
+<span class="fc" id="L68">            functionMap.get(choice).run();</span>
+        } else {
+<span class="fc" id="L70">            CLI.dString(&quot;Invalid choice&quot;);</span>
+        }
+<span class="fc" id="L72">    }</span>
+
+    protected abstract Roles getRole();
+
+    protected void login() {
+        try {
+<span class="fc" id="L78">            String user_id = CLI.scanString(&quot;Enter your user id:&quot;);</span>
+<span class="fc" id="L79">            String password = CLI.scanString(&quot;Enter your password:&quot;);</span>
+<span class="fc" id="L80">            this.sessionUser = commonAgent.loginUser(user_id, getRole(), password);</span>
+<span class="fc" id="L81">            commonAgent.getCurrentSemesterData();</span>
+<span class="fc" id="L82">            CLI.dString(&quot;Welcome &quot; + sessionUser.user_name);</span>
+<span class="fc" id="L83">        } catch (AppException e) {</span>
+<span class="fc" id="L84">            CLI.dError(e, 3);</span>
+<span class="fc" id="L85">            this.sessionUser = null;</span>
+<span class="fc" id="L86">        }</span>
+<span class="fc" id="L87">    }</span>
+
+    protected void logout() {
+        try {
+<span class="fc" id="L91">            commonAgent.logoutUser(sessionUser.user_id);</span>
+<span class="fc" id="L92">            sessionUser = null;</span>
+<span class="fc" id="L93">            CLI.dBreak();</span>
+<span class="fc" id="L94">        } catch (AppException e) {</span>
+<span class="fc" id="L95">            CLI.dError(e, 3);</span>
+<span class="fc" id="L96">        }</span>
+<span class="fc" id="L97">    }</span>
+
+    protected void updateDetails() {
+        try {
+<span class="fc" id="L101">            String new_phone = CLI.scanString(&quot;Enter a new phone number:&quot;);</span>
+<span class="fc" id="L102">            String new_password = CLI.scanString(&quot;Enter your password:&quot;);</span>
+<span class="fc" id="L103">            String new_email = CLI.scanString(&quot;Enter a new email:&quot;);</span>
+<span class="fc" id="L104">            UserObject new_user = new AdminObject(</span>
+                sessionUser.user_id, sessionUser.user_name,
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                new_email.equals(&quot;&quot;) ? sessionUser.email : new_email,</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">                new_phone.equals(&quot;&quot;) ? sessionUser.phone : new_phone);</span>
+<span class="fc" id="L108">            commonAgent.updateInfo(new_user, new_password);</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            sessionUser.email = new_user.email.equals(&quot;&quot;) ? sessionUser.email : new_user.email;</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">            sessionUser.phone = new_user.phone.equals(&quot;&quot;) ? sessionUser.phone : new_user.phone;</span>
+<span class="fc" id="L111">            CLI.dString(&quot;Details updated successfully\n&quot;);</span>
+<span class="fc" id="L112">        } catch (AppException e) {</span>
+<span class="fc" id="L113">            CLI.dError(e, 3);</span>
+<span class="fc" id="L114">        }</span>
+<span class="fc" id="L115">    }</span>
+
+    protected String formattedSemesterReport(String student_id, int year, int semester) {
+        try {
+<span class="fc" id="L119">            ArrayList&lt;RecordObject&gt; record = commonAgent.getSemesterRecords(student_id, year, semester);</span>
+<span class="fc" id="L120">            StringBuilder report = new StringBuilder();</span>
+<span class="fc" id="L121">            report.append(RecordObject.header(false));</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">            for (RecordObject recordObject : record) report.append(recordObject.format(false));</span>
+<span class="fc" id="L123">            report.append(&quot;SGPA:\t&quot;).append(commonAgent.getSGPA(student_id, year, semester)).append(&quot;\n&quot;);</span>
+<span class="fc" id="L124">            return report.toString();</span>
+<span class="nc" id="L125">        } catch (AppException e) {</span>
+<span class="nc" id="L126">            CLI.dError(e, 3);</span>
+        }
+<span class="nc" id="L128">        return &quot;&quot;;</span>
+    }
+
+    protected void viewSemesterReport() {
+        try {
+<span class="fc" id="L133">            String student_id = CLI.scanString(&quot;Enter a student id:&quot;);</span>
+<span class="fc" id="L134">            int year = CLI.scanInt(&quot;Enter a year:&quot;);</span>
+<span class="fc" id="L135">            int semester = CLI.scanInt(&quot;Enter a semester:&quot;);</span>
+<span class="fc" id="L136">            UserObject user = commonAgent.getUserObject(student_id);</span>
+<span class="fc" id="L137">            CLI.dString(user.format());</span>
+<span class="fc" id="L138">            CLI.dString(formattedSemesterReport(student_id, year, semester));</span>
+<span class="fc" id="L139">        } catch (AppException e) {</span>
+<span class="fc" id="L140">            CLI.dError(e, 3);</span>
+<span class="fc" id="L141">        }</span>
+<span class="fc" id="L142">    }</span>
+
+    protected void viewAcademicReport() {
+        try {
+<span class="fc" id="L146">            String student_id = CLI.scanString(&quot;Enter a student ID:&quot;);</span>
+<span class="fc" id="L147">            CLI.dString(&quot;User Details&quot;);</span>
+<span class="fc" id="L148">            CLI.dString(commonAgent.getUserObject(student_id).format());</span>
+<span class="fc" id="L149">            CLI.dString(&quot;\nAcademic Report:&quot;);</span>
+<span class="fc" id="L150">            ArrayList&lt;SessionObject&gt; semesters = commonAgent.getAllSemesterData();</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">            for (SessionObject semester : semesters) {</span>
+<span class="fc" id="L152">                CLI.dString(formattedSemesterReport(student_id, semester.year, semester.semester));</span>
+<span class="fc" id="L153">            }</span>
+<span class="fc" id="L154">            CLI.dString(&quot;CGPA:\t&quot; + commonAgent.getCGPA(student_id));</span>
+<span class="fc" id="L155">        } catch (AppException e) {</span>
+<span class="fc" id="L156">            CLI.dError(e, 3);</span>
+<span class="fc" id="L157">        }</span>
+<span class="fc" id="L158">    }</span>
+
+    protected void viewContactDetails() {
+        try {
+<span class="fc" id="L162">            String student_id = CLI.scanString(&quot;Enter a user ID:&quot;);</span>
+<span class="fc" id="L163">            CLI.dBreak();</span>
+<span class="fc" id="L164">            CLI.dString(&quot;User Details:&quot;);</span>
+<span class="fc" id="L165">            CLI.dString(commonAgent.getUserObject(student_id).format());</span>
+<span class="fc" id="L166">        } catch (AppException e) {</span>
+<span class="fc" id="L167">            CLI.dError(e, 3);</span>
+<span class="fc" id="L168">        }</span>
+<span class="fc" id="L169">    }</span>
+
+    protected void viewAllCourses() {
+        try {
+<span class="fc" id="L173">            CLI.dBreak();</span>
+<span class="fc" id="L174">            ArrayList&lt;CourseObject&gt; courses = commonAgent.getAllCourses();</span>
+<span class="fc" id="L175">            CLI.dString(CourseObject.header(true));</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            for (CourseObject course : courses) {</span>
+<span class="fc" id="L177">                CLI.dString(course.format(true));</span>
+<span class="fc" id="L178">            }</span>
+<span class="fc" id="L179">        } catch (AppException e) {</span>
+<span class="fc" id="L180">            CLI.dError(e, 3);</span>
+<span class="fc" id="L181">        }</span>
+<span class="fc" id="L182">    }</span>
+
+    protected void viewCourseDetails() {
+        try {
+<span class="fc" id="L186">            String course_id = CLI.scanString(&quot;Enter course ID:&quot;);</span>
+<span class="fc" id="L187">            CourseObject course = commonAgent.getCourseObject(course_id);</span>
+<span class="fc" id="L188">            CLI.dString(CourseObject.header(true));</span>
+<span class="fc" id="L189">            CLI.dString(course.format(true));</span>
+<span class="fc" id="L190">            CLI.dString(&quot;\nCourse Pre-requisites:&quot;);</span>
+<span class="fc" id="L191">            ArrayList&lt;CourseObject&gt; prerequisites = commonAgent.getCoursePrerequisites(course_id);</span>
+<span class="fc" id="L192">            CLI.dString(CourseObject.header(true));</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">            for (CourseObject prerequisite : prerequisites) {</span>
+<span class="nc" id="L194">                CLI.dString(prerequisite.format(true));</span>
+<span class="nc" id="L195">            }</span>
+
+<span class="fc" id="L197">            CLI.dString(&quot;View course constraints for a particular offering (Enter 0 to skip)&quot;);</span>
+<span class="fc" id="L198">            int year = CLI.scanInt(&quot;Enter a year:&quot;);</span>
+<span class="fc" id="L199">            int semester = CLI.scanInt(&quot;Enter a semester:&quot;);</span>
+<span class="pc bpc" id="L200" title="2 of 4 branches missed.">            if (semester == 0 || year == 0) return;</span>
+
+<span class="fc" id="L202">            CLI.dString(&quot;Course Constraints in year -&gt;&quot; + year + &quot; semester -&gt;&quot; + semester + &quot;:&quot;);</span>
+<span class="fc" id="L203">            HashMap&lt;CourseObject, Integer&gt; constraints = commonAgent.getCourseConstraints(course_id, year, semester);</span>
+<span class="fc" id="L204">            CLI.dString(CourseObject.header(true) + &quot;\t&quot; + &quot;Grade&quot;);</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">            for (CourseObject constraint : constraints.keySet()) {</span>
+<span class="nc" id="L206">                CLI.dString(constraint.format(true) +&quot;\t&quot;+ constraints.get(constraint));</span>
+<span class="nc" id="L207">            }</span>
+<span class="fc" id="L208">        } catch (AppException e) {</span>
+<span class="fc" id="L209">            CLI.dError(e, 3);</span>
+<span class="fc" id="L210">        }</span>
+<span class="fc" id="L211">    }</span>
+
+    protected void viewCourseReport() {
+        try {
+<span class="fc" id="L215">            String course_id = CLI.scanString(&quot;Enter an offered course ID:&quot;);</span>
+<span class="fc" id="L216">            int year = CLI.scanInt(&quot;Enter year :&quot;);</span>
+<span class="fc" id="L217">            int semester = CLI.scanInt(&quot;Enter semester:&quot;);</span>
+<span class="fc" id="L218">            ArrayList&lt;RecordObject&gt; course_report = commonAgent.getCourseRecord(course_id, year, semester);</span>
+<span class="fc" id="L219">            CLI.dBreak();</span>
+<span class="fc" id="L220">            CLI.dString(&quot;Course Report for &quot; + course_id + &quot; in year &quot; + year + &quot; semester &quot; + semester);</span>
+<span class="fc" id="L221">            CLI.dString(RecordObject.header(true));</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">            for (RecordObject record : course_report) {</span>
+<span class="nc" id="L223">                CLI.dString(record.format(true));</span>
+<span class="nc" id="L224">            }</span>
+<span class="fc" id="L225">        } catch (AppException e) {</span>
+<span class="fc" id="L226">            CLI.dError(e, 3);</span>
+<span class="fc" id="L227">        }</span>
+<span class="fc" id="L228">    }</span>
+
+    protected void viewCoreCourses() {
+        try {
+<span class="fc" id="L232">            int batch = CLI.scanInt(&quot;Enter a batch:&quot;);</span>
+<span class="fc" id="L233">            String dept = CLI.scanString(&quot;Enter a department:&quot;);</span>
+<span class="fc" id="L234">            CLI.dBreak();</span>
+<span class="fc" id="L235">            ArrayList&lt;CourseObject&gt; core_courses = commonAgent.getCoreCourses(batch, dept);</span>
+<span class="fc" id="L236">            CLI.dString(CourseObject.header(true));</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">            for (CourseObject course : core_courses) {</span>
+<span class="fc" id="L238">                CLI.dString(course.format(true));</span>
+<span class="fc" id="L239">            }</span>
+<span class="fc" id="L240">        } catch (AppException e) {</span>
+<span class="fc" id="L241">            CLI.dError(e, 3);</span>
+<span class="fc" id="L242">        }</span>
+<span class="fc" id="L243">    }</span>
+
+    protected void viewUGCurriculum() {
+        try {
+<span class="fc" id="L247">            int batch = CLI.scanInt(&quot;Enter a batch:&quot;);</span>
+<span class="fc" id="L248">            HashMap&lt;CourseType, Integer&gt; curriculum = commonAgent.getUGCurriculum(batch);</span>
+<span class="fc" id="L249">            CLI.dBreak();</span>
+<span class="fc" id="L250">            CLI.dString(&quot;Curriculum for batch &quot; + batch + &quot;:\n&quot;);</span>
+<span class="fc" id="L251">            CLI.dString(&quot;Course Type\tCredits&quot;);</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">            for (CourseType type : curriculum.keySet()) {</span>
+<span class="fc" id="L253">                CLI.dString(type + &quot;\t:\t&quot; + curriculum.get(type));</span>
+<span class="fc" id="L254">            }</span>
+<span class="fc" id="L255">        } catch (AppException e) {</span>
+<span class="fc" id="L256">            CLI.dError(e, 3);</span>
+<span class="fc" id="L257">        }</span>
+<span class="fc" id="L258">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

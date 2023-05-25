@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Faculty.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.UserCLI</a> &gt; <span class="el_source">Faculty.java</span></div><h1>Faculty.java</h1><pre class="source lang-java linenums">package org.academic.UserCLI;
+
+import org.academic.Agents.AgentFactory;
+import org.academic.Agents.FacultyAgent;
+import org.academic.ServicePack.DataObjects.CourseObject;
+import org.academic.CLI;
+import org.academic.ServicePack.Utils.AppException;
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.Grades;
+import org.academic.ServicePack.Utils.Roles;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class Faculty extends BaseUser {
+    FacultyAgent facultyAgent;
+    public Roles getRole() {
+<span class="fc" id="L18">        return Roles.FACULTY;</span>
+    }
+
+    public Faculty(CLI cli, AgentFactory agentFactory) throws AppException {
+<span class="fc" id="L22">        super(cli);</span>
+<span class="fc" id="L23">        this.facultyAgent = agentFactory.getFacultyAgent();</span>
+<span class="fc" id="L24">        setCommonAgent(facultyAgent);</span>
+
+        try {
+<span class="fc" id="L27">            facultyAgent.getCurrentSemesterData();</span>
+<span class="nc" id="L28">        } catch (AppException e) {</span>
+<span class="nc" id="L29">            CLI.dString(&quot;No semester found... Please contact your admin&quot;);</span>
+<span class="nc" id="L30">            return;</span>
+<span class="fc" id="L31">        }</span>
+
+<span class="fc" id="L33">        map_action(this::offerCourse, &quot;Offer a course&quot;);</span>
+<span class="fc" id="L34">        map_action(this::modifyOfferedCourse, &quot;Modify an offered course&quot;);</span>
+<span class="fc" id="L35">        map_action(this::viewOfferedCourses, &quot;View course offerings&quot;);</span>
+<span class="fc" id="L36">        map_action(this::gradeStudents, &quot;Grade Students in an Offering&quot;);</span>
+<span class="fc" id="L37">        map_action(this::removeCourse, &quot;Remove a course offering&quot;);</span>
+<span class="fc" id="L38">    }</span>
+
+    public void offerCourse() {
+        try {
+<span class="fc" id="L42">            String course_id = CLI.scanString(&quot;Enter course code:&quot;);</span>
+<span class="fc" id="L43">            facultyAgent.offerCourse(sessionUser.user_id, course_id);</span>
+            while (true) {
+<span class="fc" id="L45">                CLI.dString(&quot;Enter 1 to offer the course to a batch/branch&quot;);</span>
+<span class="fc" id="L46">                CLI.dString(&quot;Enter 2 to add a course constraint&quot;);</span>
+<span class="fc" id="L47">                CLI.dString(&quot;Enter 0 go back&quot;);</span>
+<span class="fc" id="L48">                int choice = CLI.scanInt(&quot;Choice:&quot;);</span>
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">                switch (choice) {</span>
+<span class="fc" id="L50">                    case 1 -&gt; addCourseOfferingTo(course_id);</span>
+<span class="fc" id="L51">                    case 2 -&gt; addCourseConstraints(course_id);</span>
+<span class="fc" id="L52">                    case 0 -&gt; { return; }</span>
+<span class="nc" id="L53">                    default -&gt; CLI.dString(&quot;Invalid choice&quot;);</span>
+                }
+<span class="fc" id="L55">            }</span>
+<span class="nc" id="L56">        } catch (AppException ae) {</span>
+<span class="nc" id="L57">            CLI.dError(ae, 3);</span>
+        }
+<span class="nc" id="L59">    }</span>
+
+    public void modifyOfferedCourse() {
+<span class="fc" id="L62">        String course_id = CLI.scanString(&quot;Enter course code:&quot;);</span>
+        while (true) {
+<span class="fc" id="L64">            CLI.dString(&quot;1. Offer course to a batch and department&quot;);</span>
+<span class="fc" id="L65">            CLI.dString(&quot;2. Remove course for a batch and department&quot;);</span>
+<span class="fc" id="L66">            CLI.dString(&quot;3. Add course constraint&quot;);</span>
+<span class="fc" id="L67">            CLI.dString(&quot;4. Remove course constraint&quot;);</span>
+<span class="fc" id="L68">            CLI.dString(&quot;0. Go back&quot;);</span>
+<span class="fc" id="L69">            int choice = CLI.scanInt(&quot;\nChoice:&quot;);</span>
+<span class="pc bpc" id="L70" title="1 of 6 branches missed.">            switch (choice) {</span>
+<span class="fc" id="L71">                case 1 -&gt; addCourseOfferingTo(course_id);</span>
+<span class="fc" id="L72">                case 2 -&gt; removeOfferingTo(course_id);</span>
+<span class="fc" id="L73">                case 3 -&gt; addCourseConstraints(course_id);</span>
+<span class="fc" id="L74">                case 4 -&gt; removeCourseConstraint(course_id);</span>
+<span class="fc" id="L75">                case 0 -&gt; { return; }</span>
+<span class="nc" id="L76">                default -&gt; CLI.dString(&quot;Invalid choice&quot;);</span>
+            }
+<span class="fc" id="L78">        }</span>
+    }
+
+    public void addCourseOfferingTo(String course_id) {
+<span class="fc" id="L82">        int addOffering = 1;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        while (addOffering == 1) {</span>
+<span class="fc" id="L84">            CLI.dString(&quot;Offering to a batch and department&quot;);</span>
+
+<span class="fc" id="L86">            int batch = CLI.scanInt(&quot;Enter a batch to offer the course to:&quot;);</span>
+<span class="fc" id="L87">            int offer_to_dept = 1;</span>
+
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            while (offer_to_dept == 1) {</span>
+<span class="fc" id="L90">                String dept_id = CLI.scanString( String.format(&quot;(%d) Enter a department id:&quot;, batch) );</span>
+
+<span class="fc" id="L92">                CourseType credit_option = CLI.scanCourseType( String.format(&quot;(%d-%s) Enter a credit option:&quot;, batch, dept_id));</span>
+                try {
+<span class="fc" id="L94">                    facultyAgent.offerTo(sessionUser.user_id, course_id, batch, dept_id, credit_option);</span>
+<span class="fc" id="L95">                } catch (AppException ae) {</span>
+<span class="fc" id="L96">                    CLI.dError(ae, 3);</span>
+<span class="fc" id="L97">                }</span>
+
+<span class="fc" id="L99">                offer_to_dept = CLI.scanInt(&quot;Enter 1 to offer to another department, 0 to skip&quot;);</span>
+<span class="fc" id="L100">            }</span>
+<span class="fc" id="L101">            addOffering = CLI.scanInt(&quot;Offer to another batch? (Enter 1 to add, 0 to skip)&quot;);</span>
+<span class="fc" id="L102">        }</span>
+<span class="fc" id="L103">    }</span>
+
+    public void addCourseConstraints(String course_id) {
+<span class="fc" id="L106">        int addConstraints = 1;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        while (addConstraints == 1) {</span>
+<span class="fc" id="L108">            CLI.dString(&quot;Adding constarint to course score&quot;);</span>
+<span class="fc" id="L109">            String cons_course_id = CLI.scanString(&quot;Enter a course ID:&quot;);</span>
+<span class="fc" id="L110">            int cons_course_score = CLI.scanInt(&quot;Enter a course score:&quot;);</span>
+
+            try {
+<span class="fc" id="L113">                facultyAgent.addConstraintToCourse(sessionUser.user_id, course_id, cons_course_id, cons_course_score);</span>
+<span class="fc" id="L114">            } catch (AppException ae) {</span>
+<span class="fc" id="L115">                CLI.dError(ae, 3);</span>
+<span class="fc" id="L116">            }</span>
+<span class="fc" id="L117">            addConstraints = CLI.scanInt(&quot;Add more constraints? (Enter 1 to add, 0 to skip)&quot;);</span>
+<span class="fc" id="L118">        }</span>
+<span class="fc" id="L119">    }</span>
+
+    public void removeCourseConstraint(String course_id) {
+        try {
+<span class="fc" id="L123">            String pre_course_id = CLI.scanString(&quot;Enter the course to remove constraint from:&quot;);</span>
+<span class="fc" id="L124">            facultyAgent.removeConstraintToCourse(sessionUser.user_id, course_id, pre_course_id);</span>
+<span class="fc" id="L125">        } catch (AppException ae) {</span>
+<span class="fc" id="L126">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L127">        }</span>
+<span class="fc" id="L128">    }</span>
+
+    public void removeOfferingTo(String course_id) {
+        try {
+<span class="fc" id="L132">            int batch = CLI.scanInt(&quot;Enter batch:&quot;);</span>
+<span class="fc" id="L133">            String dept_id = CLI.scanString(&quot;Enter department id:&quot;);</span>
+<span class="fc" id="L134">            facultyAgent.removeOfferTo(sessionUser.user_id, course_id, batch, dept_id);</span>
+<span class="fc" id="L135">        } catch (AppException ae) {</span>
+<span class="fc" id="L136">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L137">        }</span>
+<span class="fc" id="L138">    }</span>
+
+    public void removeCourse() {
+        try {
+<span class="fc" id="L142">            String course_id = CLI.scanString(&quot;Enter a course to remove:&quot;);</span>
+<span class="fc" id="L143">            facultyAgent.unOfferCourse(sessionUser.user_id, course_id);</span>
+<span class="fc" id="L144">        } catch (AppException ae) {</span>
+<span class="fc" id="L145">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L146">        }</span>
+<span class="fc" id="L147">    }</span>
+
+    public void gradeStudents() {
+        try {
+<span class="fc" id="L151">            String course_id = CLI.scanString(&quot;Enter course id:&quot;);</span>
+
+<span class="fc" id="L153">            CLI.dString(&quot;Enter 1 to grade a single student&quot;);</span>
+<span class="fc" id="L154">            CLI.dString(&quot;Enter 2 to grade the entire course via CSV&quot;);</span>
+<span class="fc" id="L155">            int choice = CLI.scanInt(&quot;Choice:&quot;);</span>
+<span class="fc bfc" id="L156" title="All 3 branches covered.">            switch (choice) {</span>
+                case 1 -&gt; {
+<span class="fc" id="L158">                    String student_id = CLI.scanString(&quot;Enter Student ID:&quot;);</span>
+<span class="fc" id="L159">                    Grades grade = CLI.scanGrade(&quot;Enter grade:&quot;);</span>
+<span class="fc" id="L160">                    facultyAgent.gradeStudent(sessionUser.user_id, course_id, student_id, grade);</span>
+<span class="fc" id="L161">                }</span>
+                case 2 -&gt; {
+<span class="fc" id="L163">                    String path = CLI.scanString(&quot;Enter file path:&quot;);</span>
+<span class="fc" id="L164">                    HashMap&lt;String, Grades&gt; grades = facultyAgent.getGradesFromCSV(path);</span>
+<span class="fc" id="L165">                    facultyAgent.gradeStudents(sessionUser.user_id, course_id, grades);</span>
+<span class="fc" id="L166">                }</span>
+<span class="fc" id="L167">                default -&gt; CLI.dString(&quot;Invalid choice&quot;);</span>
+            }
+
+<span class="fc" id="L170">        } catch (AppException ae) {</span>
+<span class="fc" id="L171">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L172">        }</span>
+<span class="fc" id="L173">    }</span>
+
+    public void viewOfferedCourses() {
+        try {
+<span class="fc" id="L177">            int year = CLI.scanInt(&quot;Enter a year:&quot;);</span>
+<span class="fc" id="L178">            int semester = CLI.scanInt(&quot;Enter a semester:&quot;);</span>
+<span class="fc" id="L179">            ArrayList&lt;CourseObject&gt; courses = facultyAgent.getOfferedCourses(sessionUser.user_id, year, semester);</span>
+<span class="fc" id="L180">            CLI.dString(CourseObject.header(true));</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            for (CourseObject course : courses) {</span>
+<span class="fc" id="L182">                CLI.dString(course.format(true));</span>
+<span class="fc" id="L183">            }</span>
+<span class="fc" id="L184">        } catch (AppException ae) {</span>
+<span class="fc" id="L185">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L186">        }</span>
+<span class="fc" id="L187">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

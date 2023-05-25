@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BaseService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.Services</a> &gt; <span class="el_source">BaseService.java</span></div><h1>BaseService.java</h1><pre class="source lang-java linenums">package org.academic.Services;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import org.academic.ServicePack.BaseInterface;
+import org.academic.ServicePack.DataObjects.*;
+import org.academic.ServicePack.Utils.*;
+
+public class BaseService implements BaseInterface {
+    protected Connection conn;
+
+<span class="fc" id="L14">    public BaseService(String url, String user, String password) throws AppException {</span>
+        try {
+<span class="fc" id="L16">            conn = DriverManager.getConnection(url, user, password);</span>
+<span class="nc" id="L17">        } catch (SQLException e) {</span>
+<span class="nc" id="L18">            throw new AppException(&quot;Could not connect to database&quot;, e);</span>
+<span class="fc" id="L19">        }</span>
+<span class="fc" id="L20">    }</span>
+
+    @Override
+    public SessionObject getCurrentSemesterData() throws AppException {
+        try {
+<span class="fc" id="L25">            return getAllSemesterData().get(0);</span>
+<span class="nc" id="L26">        } catch (Exception e) {</span>
+<span class="nc" id="L27">            throw new AppException(&quot;No session data found&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public ArrayList&lt;SessionObject&gt; getAllSemesterData() throws AppException {
+        try {
+<span class="fc" id="L34">            ResultSet rs = conn.prepareStatement(&quot;SELECT semester, year, semester_status FROM academic_info ORDER BY start_date DESC&quot;).executeQuery();</span>
+<span class="fc" id="L35">            ArrayList&lt;SessionObject&gt; sessions = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L37">                sessions.add(new SessionObject(rs.getInt(&quot;year&quot;), rs.getInt(&quot;semester&quot;), SemStatus.valueOf(rs.getString(&quot;semester_status&quot;))));</span>
+            }
+<span class="fc" id="L39">            return sessions;</span>
+<span class="nc" id="L40">        } catch (SQLException e) {</span>
+<span class="nc" id="L41">            throw new AppException(&quot;Error while getting academic session data&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public ArrayList&lt;CourseObject&gt; getAllCourses() throws AppException {
+        try {
+<span class="fc" id="L48">            ResultSet rs = conn.prepareStatement(&quot;SELECT * FROM course_catalogue ORDER BY course_id&quot;).executeQuery();</span>
+
+<span class="fc" id="L50">            ArrayList&lt;CourseObject&gt; courses = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L53">                String course = rs.getString(&quot;course_id&quot;);</span>
+<span class="fc" id="L54">                CourseObject newCourse = getCourseObject(course);</span>
+<span class="fc" id="L55">                courses.add(newCourse);</span>
+<span class="fc" id="L56">            }</span>
+
+<span class="fc" id="L58">            return courses;</span>
+<span class="nc" id="L59">        } catch (SQLException e) {</span>
+<span class="nc" id="L60">            throw new AppException(&quot;Could not get available courses.&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public CourseObject getCourseObject(String course_id) throws AppException {
+        try {
+<span class="fc" id="L67">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM course_catalogue WHERE course_id = ?&quot;);</span>
+<span class="fc" id="L68">            pstmt.setString(1, course_id);</span>
+
+<span class="fc" id="L70">            ResultSet rs = pstmt.executeQuery();</span>
+
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (rs.next()) {</span>
+<span class="fc" id="L73">                String course = rs.getString(&quot;course_id&quot;);</span>
+<span class="fc" id="L74">                String name = rs.getString(&quot;course_name&quot;);</span>
+<span class="fc" id="L75">                String ltp = rs.getString(&quot;ltp&quot;);</span>
+<span class="fc" id="L76">                String dept = rs.getString(&quot;course_dept&quot;);</span>
+<span class="fc" id="L77">                int credits = rs.getInt(&quot;credits&quot;);</span>
+<span class="fc" id="L78">                return new CourseObject(course, name, ltp, dept, credits);</span>
+<span class="fc" id="L79">            } else throw new AppException(&quot;Course not found&quot;);</span>
+<span class="nc" id="L80">        } catch (SQLException e) {</span>
+<span class="nc" id="L81">            throw new AppException(&quot;Could not get course details.&quot;, e);</span>
+        }
+    }
+
+    public Grades getGrade(String student_id, int offering_id) throws AppException {
+        try {
+<span class="fc" id="L87">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM record WHERE offering_id = ? AND student_id = ?&quot;);</span>
+<span class="fc" id="L88">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L89">            pstmt.setString(2, student_id);</span>
+<span class="fc" id="L90">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (rs.next()) {</span>
+<span class="fc" id="L92">                return Grades.get(rs.getString(&quot;grade&quot;));</span>
+<span class="fc" id="L93">            } else throw new AppException(&quot;Student enrollment not found&quot;);</span>
+<span class="nc" id="L94">        } catch (SQLException e) {</span>
+<span class="nc" id="L95">            throw new AppException(&quot;Could not get record details.&quot;, e);</span>
+        }
+    }
+
+    public Grades getGrade(String student_id, String course_id) throws AppException {
+        try {
+<span class="fc" id="L101">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT * FROM record r, offerings o WHERE student_id = ? AND o.course_id = ? AND o.offering_id = r.offering_id&quot;
+            );
+<span class="fc" id="L104">            pstmt.setString(1, student_id);</span>
+<span class="fc" id="L105">            pstmt.setString(2, course_id);</span>
+<span class="fc" id="L106">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc" id="L107">            Grades grade = Grades.NA;</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            while (rs.next()){</span>
+<span class="fc" id="L109">                Grades course_grade = Grades.get(rs.getString(&quot;grade&quot;));</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">                if (grade.value &lt;= course_grade.value) grade = course_grade;</span>
+<span class="fc" id="L111">            }</span>
+<span class="fc" id="L112">            return grade;</span>
+<span class="nc" id="L113">        } catch (SQLException e){</span>
+<span class="nc" id="L114">            throw new AppException(&quot;Could not get enrollment details&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public CourseType getCourseType(String course_id, String student_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L121">            int offering_id = getOfferingId(course_id, year, semester);</span>
+<span class="fc" id="L122">            StudentObject student = getStudentObject(student_id);</span>
+<span class="fc" id="L123">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT credit_option FROM offering_details WHERE offering_id = ? AND dept = ? AND batch = ?&quot;);
+<span class="fc" id="L125">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L126">            pstmt.setString(2, student.department);</span>
+<span class="fc" id="L127">            pstmt.setInt(3, student.batch);</span>
+<span class="fc" id="L128">            ResultSet rs = pstmt.executeQuery();</span>
+
+<span class="fc bfc" id="L130" title="All 2 branches covered.">            if (rs.next()){</span>
+<span class="fc" id="L131">                return CourseType.valueOf(rs.getString(&quot;credit_option&quot;));</span>
+<span class="fc" id="L132">            } else throw new AppException(&quot;Course not offered to this batch&quot;);</span>
+<span class="nc" id="L133">        } catch (SQLException e){</span>
+<span class="nc" id="L134">            throw new AppException(&quot;Could not get course type&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public RecordObject getRecordObject(String student_id, String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L141">            int offering_id = getOfferingId(course_id, year, semester);</span>
+<span class="fc" id="L142">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM offerings o WHERE o.offering_id = ?&quot;);</span>
+<span class="fc" id="L143">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L144">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">            if (rs.next()) {</span>
+<span class="fc" id="L146">                String instructor = rs.getString(&quot;instructor&quot;);</span>
+<span class="fc" id="L147">                FacultyObject faculty = getFacultyObject(instructor);</span>
+<span class="fc" id="L148">                StudentObject student = getStudentObject(student_id);</span>
+<span class="fc" id="L149">                CourseObject course = getCourseObject(course_id);</span>
+<span class="fc" id="L150">                Grades grade = null;</span>
+<span class="fc" id="L151">                try { grade = getGrade(student_id, offering_id); } catch (AppException ignored) { }</span>
+<span class="fc" id="L152">                CourseType type = getCourseType(course_id, student_id, year, semester);</span>
+<span class="fc" id="L153">                return new RecordObject(course, student, faculty, grade, type);</span>
+<span class="nc" id="L154">            } else throw new AppException(&quot;Record not found&quot;);</span>
+<span class="nc" id="L155">        } catch (SQLException e) {</span>
+<span class="nc" id="L156">            throw new AppException(&quot;Could not get record details.&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public ArrayList&lt;CourseObject&gt; getCoursePrerequisites(String course_id) throws AppException {
+        try {
+<span class="fc" id="L163">            getCourseObject(course_id);</span>
+<span class="fc" id="L164">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM course_prereqs WHERE course_id = ?&quot;);</span>
+<span class="fc" id="L165">            pstmt.setString(1, course_id);</span>
+<span class="fc" id="L166">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc" id="L167">            ArrayList&lt;CourseObject&gt; prereqs = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L169">                String prereq = rs.getString(&quot;prereq_id&quot;);</span>
+<span class="fc" id="L170">                CourseObject prereqCourse = getCourseObject(prereq);</span>
+<span class="fc" id="L171">                prereqs.add(prereqCourse);</span>
+<span class="fc" id="L172">            }</span>
+<span class="fc" id="L173">            return prereqs;</span>
+<span class="nc" id="L174">        } catch (SQLException e) {</span>
+<span class="nc" id="L175">            throw new AppException(&quot;Could not get course prerequisites for course:&quot; + course_id, e);</span>
+        }
+    }
+
+    @Override
+    public HashMap&lt;CourseObject, Integer&gt; getCourseConstraints(String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L182">            getCourseObject(course_id);</span>
+<span class="fc" id="L183">            int offering_id = getOfferingId(course_id, year, semester);</span>
+<span class="fc" id="L184">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM offering_constraints WHERE offering_id = ?&quot;);</span>
+<span class="fc" id="L185">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L186">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc" id="L187">            HashMap&lt;CourseObject, Integer&gt; constraints = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L189">                String constraint = rs.getString(&quot;pre_course_id&quot;);</span>
+<span class="fc" id="L190">                int count = rs.getInt(&quot;min_grade&quot;);</span>
+<span class="fc" id="L191">                CourseObject constraintCourse = getCourseObject(constraint);</span>
+<span class="fc" id="L192">                constraints.put(constraintCourse, count);</span>
+<span class="fc" id="L193">            }</span>
+<span class="fc" id="L194">            return constraints;</span>
+<span class="nc" id="L195">        } catch (SQLException e) {</span>
+<span class="nc" id="L196">            throw new AppException(&quot;Could not get course constraints for course:&quot; + course_id, e);</span>
+        }
+    }
+
+    @Override
+    public ArrayList&lt;CourseObject&gt; getEnrolledCourses(String student_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L203">            getStudentObject(student_id);</span>
+<span class="fc" id="L204">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT * FROM offerings o, record r &quot;+
+                    &quot;WHERE r.offering_id = o.offering_id &quot;+
+                    &quot;AND r.student_id = ? AND o.semester = ? AND o.year = ? order by o.course_id&quot;);
+<span class="fc" id="L208">            pstmt.setString(1, student_id);</span>
+<span class="fc" id="L209">            pstmt.setInt(2, semester);</span>
+<span class="fc" id="L210">            pstmt.setInt(3, year);</span>
+<span class="fc" id="L211">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc" id="L212">            ArrayList&lt;CourseObject&gt; results = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L214">                String course = rs.getString(&quot;course_id&quot;);</span>
+<span class="fc" id="L215">                CourseObject courseObject = getCourseObject(course);</span>
+<span class="fc" id="L216">                results.add(courseObject);</span>
+<span class="fc" id="L217">            }</span>
+<span class="fc" id="L218">            return results;</span>
+<span class="nc" id="L219">        } catch (SQLException e) {</span>
+<span class="nc" id="L220">            throw new AppException(&quot;Could not get semester results for student:&quot; + student_id, e);</span>
+        }
+    }
+
+    @Override
+    public FacultyObject getFacultyObject(String faculty_id) throws AppException{
+        try {
+<span class="fc" id="L227">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT * FROM faculty, users WHERE user_id = faculty.faculty_id AND faculty_id = ?&quot;);
+<span class="fc" id="L229">            pstmt.setString(1, faculty_id);</span>
+<span class="fc" id="L230">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">            if (rs.next()) {</span>
+<span class="fc" id="L232">                String name = rs.getString(&quot;user_name&quot;);</span>
+<span class="fc" id="L233">                String email = rs.getString(&quot;email&quot;);</span>
+<span class="fc" id="L234">                String phone = rs.getString(&quot;phone_number&quot;);</span>
+<span class="fc" id="L235">                String dept = rs.getString(&quot;dept&quot;);</span>
+<span class="fc" id="L236">                return new FacultyObject(faculty_id, name, email, phone, dept);</span>
+<span class="fc" id="L237">            } else throw new AppException(&quot;Could not find faculty id: &quot; + faculty_id);</span>
+<span class="nc" id="L238">        } catch (SQLException e) {</span>
+<span class="nc" id="L239">            throw new AppException(&quot;Could not get faculty id: &quot; + faculty_id, e);</span>
+        }
+    }
+
+    @Override
+    public StudentObject getStudentObject(String student_id) throws AppException{
+        try {
+<span class="fc" id="L246">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM students, users WHERE user_id = students.student_id AND student_id = ?&quot;);</span>
+<span class="fc" id="L247">            pstmt.setString(1, student_id);</span>
+<span class="fc" id="L248">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">            if (rs.next()) {</span>
+<span class="fc" id="L250">                String name = rs.getString(&quot;user_name&quot;);</span>
+<span class="fc" id="L251">                String email = rs.getString(&quot;email&quot;);</span>
+<span class="fc" id="L252">                String phone = rs.getString(&quot;phone_number&quot;);</span>
+<span class="fc" id="L253">                String dept = rs.getString(&quot;dept&quot;);</span>
+<span class="fc" id="L254">                int batch = rs.getInt(&quot;batch&quot;);</span>
+<span class="fc" id="L255">                return new StudentObject(student_id, name, email, phone, dept, batch);</span>
+<span class="fc" id="L256">            } else throw new AppException(&quot;Could not find student id: &quot; + student_id);</span>
+<span class="nc" id="L257">        } catch (SQLException e) {</span>
+<span class="nc" id="L258">            throw new AppException(&quot;Could not get student details of student id: &quot; + student_id, e);</span>
+        }
+    }
+
+    @Override
+    public AdminObject getAdminObject(String admin_id) throws AppException{
+        try {
+<span class="fc" id="L265">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM users WHERE user_id = ?&quot;);</span>
+<span class="fc" id="L266">            pstmt.setString(1, admin_id);</span>
+<span class="fc" id="L267">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">            if (rs.next()) {</span>
+<span class="fc" id="L269">                String name = rs.getString(&quot;user_name&quot;);</span>
+<span class="fc" id="L270">                String email = rs.getString(&quot;email&quot;);</span>
+<span class="fc" id="L271">                String phone = rs.getString(&quot;phone_number&quot;);</span>
+<span class="fc" id="L272">                return new AdminObject(admin_id, name, email, phone);</span>
+<span class="fc" id="L273">            } else throw new AppException(&quot;Could not find admin id: &quot; + admin_id);</span>
+<span class="nc" id="L274">        } catch (SQLException e) {</span>
+<span class="nc" id="L275">            throw new AppException(&quot;Could not get admin details of admin id: &quot; + admin_id, e);</span>
+        }
+    }
+
+    @Override
+    public ArrayList&lt;CourseObject&gt; getCoreCourses(int batch, String dept) throws AppException {
+        try {
+<span class="fc" id="L282">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM core_courses WHERE batch = ? AND dept = ? ORDER BY course_id&quot;);</span>
+<span class="fc" id="L283">            pstmt.setInt(1, batch);</span>
+<span class="fc" id="L284">            pstmt.setString(2, dept);</span>
+<span class="fc" id="L285">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc" id="L286">            ArrayList&lt;CourseObject&gt; coreCourses = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L288">                String course = rs.getString(&quot;course_id&quot;);</span>
+<span class="fc" id="L289">                CourseObject courseObject = getCourseObject(course);</span>
+<span class="fc" id="L290">                coreCourses.add(courseObject);</span>
+<span class="fc" id="L291">            }</span>
+<span class="fc" id="L292">            return coreCourses;</span>
+<span class="nc" id="L293">        } catch (SQLException e) {</span>
+<span class="nc" id="L294">            throw new AppException(&quot;Could not get core courses&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public HashMap&lt;CourseType, Integer&gt; getUGCurriculum(int batch) throws AppException {
+        try {
+<span class="fc" id="L301">            PreparedStatement pstmt = conn.prepareStatement(&quot;SELECT * FROM ug_requirements WHERE batch = ?&quot;);</span>
+<span class="fc" id="L302">            pstmt.setInt(1, batch);</span>
+<span class="fc" id="L303">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc" id="L304">            HashMap&lt;CourseType, Integer&gt; ug_reqs = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L306">                String credit_option = rs.getString(&quot;credit_option&quot;);</span>
+<span class="fc" id="L307">                int credits = rs.getInt(&quot;credits&quot;);</span>
+<span class="fc" id="L308">                ug_reqs.put(CourseType.valueOf(credit_option), credits);</span>
+<span class="fc" id="L309">            }</span>
+<span class="fc" id="L310">            return ug_reqs;</span>
+<span class="nc" id="L311">        } catch (SQLException e) {</span>
+<span class="nc" id="L312">            throw new AppException(&quot;Could not get UG curriculum&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public void updateInfo(UserObject newUserData, String password) throws AppException {
+        try {
+<span class="fc" id="L319">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;UPDATE users SET user_name = ?, email = ?, phone_number = ?, password = ? WHERE user_id = ?&quot;);
+<span class="fc" id="L321">            pstmt.setString(1, newUserData.user_name);</span>
+<span class="fc" id="L322">            pstmt.setString(2, newUserData.email);</span>
+<span class="fc" id="L323">            pstmt.setString(3, newUserData.phone);</span>
+<span class="fc" id="L324">            pstmt.setString(4, password);</span>
+<span class="fc" id="L325">            pstmt.setString(5, newUserData.user_id);</span>
+<span class="fc" id="L326">            int updated = pstmt.executeUpdate();</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">            if (updated == 0) throw new AppException(&quot;User not found&quot;);</span>
+<span class="nc" id="L328">        } catch (SQLException e) {</span>
+<span class="nc" id="L329">            throw new AppException(&quot;Could not update user details&quot;, e);</span>
+<span class="fc" id="L330">        }</span>
+<span class="fc" id="L331">    }</span>
+
+    @Override
+    public int getOfferingId(String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L336">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT offering_id FROM offerings WHERE  &quot;+
+                    &quot;course_id = ? AND semester = ? AND year = ?&quot;
+            );
+<span class="fc" id="L340">            pstmt.setString(1, course_id);</span>
+<span class="fc" id="L341">            pstmt.setInt(2, semester);</span>
+<span class="fc" id="L342">            pstmt.setInt(3, year);</span>
+
+<span class="fc" id="L344">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">            if (rs.next()){</span>
+<span class="fc" id="L346">                return rs.getInt(&quot;offering_id&quot;);</span>
+            } else {
+<span class="fc" id="L348">                throw new AppException(String.format(&quot;Offering (%s-%d-%d) not found&quot;,course_id, year, semester));</span>
+            }
+<span class="nc" id="L350">        } catch(SQLException e) {</span>
+<span class="nc" id="L351">            throw new AppException(&quot;Could not get offering id&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public ArrayList&lt;RecordObject&gt; getCourseRecord(String course_id, int year, int semester) throws AppException {
+        try {
+<span class="fc" id="L358">            int offering_id = getOfferingId(course_id, year, semester);</span>
+<span class="fc" id="L359">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT student_id FROM record WHERE offering_id = ? &quot; +
+                    &quot;ORDER BY student_id&quot;
+            );
+<span class="fc" id="L363">            pstmt.setInt(1, offering_id);</span>
+<span class="fc" id="L364">            ResultSet rs = pstmt.executeQuery();</span>
+
+<span class="fc" id="L366">            ArrayList&lt;RecordObject&gt; records = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L368" title="All 2 branches covered.">            while (rs.next()) {</span>
+<span class="fc" id="L369">                records.add((getRecordObject(rs.getString(&quot;student_id&quot;), course_id, year, semester)));</span>
+            }
+
+<span class="fc" id="L372">            return records;</span>
+<span class="nc" id="L373">        } catch (SQLException e) {</span>
+<span class="nc" id="L374">            throw new AppException(&quot;Could not get enrolled students.&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public Boolean verifyUser(String user_id, Roles role, String password) throws AppException {
+        try {
+<span class="fc" id="L381">            PreparedStatement pstmt = conn.prepareStatement(</span>
+                &quot;SELECT password FROM users WHERE user_id = ? AND user_role = ?&quot;
+            );
+<span class="fc" id="L384">            pstmt.setString(1, user_id);</span>
+<span class="fc" id="L385">            pstmt.setString(2, role.value);</span>
+<span class="fc" id="L386">            ResultSet rs = pstmt.executeQuery();</span>
+<span class="fc bfc" id="L387" title="All 2 branches covered.">            if (rs.next()) {</span>
+<span class="fc" id="L388">                return rs.getString(&quot;password&quot;).equals(password);</span>
+            } else {
+<span class="fc" id="L390">                throw new AppException(&quot;User not found&quot;);</span>
+            }
+<span class="nc" id="L392">        } catch (SQLException e) {</span>
+<span class="nc" id="L393">            throw new AppException(&quot;Could not login user&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public void logAction(String user_id, String action) throws AppException {
+        try {
+<span class="fc" id="L400">            PreparedStatement pstmt = conn.prepareStatement(&quot;INSERT INTO LOGS (user_id, action) VALUES (?, ?)&quot;);</span>
+<span class="fc" id="L401">            pstmt.setString(1, user_id);</span>
+<span class="fc" id="L402">            pstmt.setString(2, action);</span>
+<span class="fc" id="L403">            pstmt.executeUpdate();</span>
+<span class="nc" id="L404">        } catch (SQLException e) {</span>
+<span class="nc" id="L405">            throw new AppException(&quot;Could add action to log&quot;, e);</span>
+<span class="fc" id="L406">        }</span>
+<span class="fc" id="L407">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

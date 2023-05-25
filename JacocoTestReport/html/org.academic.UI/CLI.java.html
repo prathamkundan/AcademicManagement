@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CLI.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.UI</a> &gt; <span class="el_source">CLI.java</span></div><h1>CLI.java</h1><pre class="source lang-java linenums">package org.academic.UI;
+
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.Grades;
+import org.academic.ServicePack.Utils.Roles;
+
+import java.io.*;
+import java.util.Scanner;
+
+public class CLI {
+    public Scanner scanner;
+    public PrintStream writer;
+
+<span class="fc" id="L14">    public CLI(InputStream in, PrintStream out) {</span>
+<span class="fc" id="L15">        scanner = new Scanner(in);</span>
+<span class="fc" id="L16">        writer = new PrintStream(out);</span>
+<span class="fc" id="L17">    }</span>
+
+    public String scanString(String message) {
+<span class="fc" id="L20">        diString(message);</span>
+<span class="fc" id="L21">        return scanner.nextLine();</span>
+    }
+
+    public void dBreak(){
+<span class="fc" id="L25">        dString(&quot;-&quot;.repeat(55));</span>
+<span class="fc" id="L26">    }</span>
+
+    public int scanInt(String message) {
+        while (true) {
+            try {
+<span class="fc" id="L31">                diString(message);</span>
+<span class="fc" id="L32">                String scannedInput = scanner.nextLine();</span>
+<span class="fc" id="L33">                return Integer.parseInt(scannedInput);</span>
+<span class="fc" id="L34">            } catch (Exception e) {</span>
+<span class="fc" id="L35">                dString(&quot;Could not read integer&quot;);</span>
+<span class="fc" id="L36">            }</span>
+        }
+    }
+
+    public Roles scanRole(String message) {
+        while (true) {
+<span class="fc" id="L42">            diString(message);</span>
+<span class="fc" id="L43">            String scannedInput = scanner.nextLine();</span>
+            try {
+<span class="fc" id="L45">                return Roles.valueOf(scannedInput);</span>
+<span class="fc" id="L46">            } catch (IllegalArgumentException iae) {</span>
+<span class="fc" id="L47">                dString(&quot;Could not read role&quot;);</span>
+            }
+<span class="fc" id="L49">        }</span>
+    }
+
+    public Grades scanGrade(String message) {
+        while (true) {
+<span class="fc" id="L54">            diString(message);</span>
+<span class="fc" id="L55">            String scannedInput = scanner.nextLine();</span>
+            try {
+<span class="fc" id="L57">                Grades grade =  Grades.get(scannedInput);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">                if (grade == null) throw new IllegalArgumentException(&quot;Could not read grade&quot;);</span>
+<span class="fc" id="L59">                else return grade;</span>
+<span class="fc" id="L60">            } catch (IllegalArgumentException iae) {</span>
+<span class="fc" id="L61">                dString(&quot;Could not read grade&quot;);</span>
+            }
+<span class="fc" id="L63">        }</span>
+    }
+
+    public CourseType scanCourseType(String message) {
+        while(true){
+<span class="fc" id="L68">            diString(message);</span>
+<span class="fc" id="L69">            String scannedInput = scanner.nextLine();</span>
+            try {
+<span class="fc" id="L71">                return CourseType.valueOf(scannedInput);</span>
+<span class="fc" id="L72">            } catch (IllegalArgumentException iae) {</span>
+<span class="fc" id="L73">                dString(&quot;Could not read course type&quot;);</span>
+            }
+<span class="fc" id="L75">        }</span>
+    }
+
+    public &lt;T&gt; void dString(T param) {
+<span class="fc" id="L79">        writer.println(param.toString());</span>
+<span class="fc" id="L80">    }</span>
+
+    public void printToFile(String output_dest, String param) {
+        try {
+<span class="nc" id="L84">            FileWriter file_writer = new FileWriter(output_dest, true);</span>
+<span class="nc" id="L85">            file_writer.write(param);</span>
+<span class="nc" id="L86">            file_writer.close();</span>
+<span class="nc" id="L87">        } catch (IOException ioe) {</span>
+<span class="nc" id="L88">            dString(&quot;Could not write to file&quot;);</span>
+<span class="nc" id="L89">        }</span>
+<span class="nc" id="L90">    }</span>
+
+    public &lt;T&gt; void diString(T param) {
+<span class="fc" id="L93">        writer.print(param.toString());</span>
+<span class="fc" id="L94">    }</span>
+
+    public void dError(Throwable e, int depth) {
+<span class="fc" id="L97">        dString(&quot;Error: &quot; + e.getMessage());</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for (int i=1; i&lt;=depth; i++){</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">            if (e.getCause() != null) {</span>
+<span class="fc" id="L100">                dString(&quot;\t&quot;.repeat(i) + &quot;Reason: &quot; + e.getCause().getMessage());</span>
+            }
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">            if (e.getCause() instanceof Exception) {</span>
+<span class="fc" id="L103">                e = e.getCause();</span>
+            }
+        }
+<span class="fc" id="L106">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

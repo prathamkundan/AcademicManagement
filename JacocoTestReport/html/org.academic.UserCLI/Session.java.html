@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Session.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.UserCLI</a> &gt; <span class="el_source">Session.java</span></div><h1>Session.java</h1><pre class="source lang-java linenums">package org.academic.UserCLI;
+
+import org.academic.Agents.AgentFactory;
+import org.academic.CLI;
+import org.academic.Constants;
+import org.academic.ServicePack.Utils.AppException;
+
+public class Session {
+    private final CLI CLI;
+<span class="nc" id="L10">    public Session(CLI cli) {</span>
+<span class="nc" id="L11">        this.CLI = cli;</span>
+<span class="nc" id="L12">    }</span>
+    private BaseUser userCLI;
+<span class="nc" id="L14">    AgentFactory agentFactory = new AgentFactory(Constants.TEST_DB_URL, Constants.DB_USERNAME, Constants.DB_PASSWORD);</span>
+    public void start() throws AppException {
+<span class="nc" id="L16">        CLI.dBreak();</span>
+<span class="nc" id="L17">        CLI.dString(&quot;-------- Welcome to Academic Management System --------&quot;);</span>
+<span class="nc" id="L18">        CLI.dBreak();</span>
+
+        while (true) {
+<span class="nc" id="L21">            CLI.dString(&quot;Please select your role:&quot;);</span>
+<span class="nc" id="L22">            CLI.dString(&quot;1. Admin&quot;);</span>
+<span class="nc" id="L23">            CLI.dString(&quot;2. Faculty&quot;);</span>
+<span class="nc" id="L24">            CLI.dString(&quot;3. Student&quot;);</span>
+<span class="nc" id="L25">            CLI.dString(&quot;0. Exit&quot;);</span>
+<span class="nc" id="L26">            int choice = CLI.scanInt(&quot;Choice:&quot;);</span>
+<span class="nc bnc" id="L27" title="All 5 branches missed.">            switch (choice) {</span>
+<span class="nc" id="L28">                case 0 -&gt; { return; }</span>
+<span class="nc" id="L29">                case 1 -&gt; userCLI = new Admin(CLI, agentFactory);</span>
+<span class="nc" id="L30">                case 2 -&gt; userCLI = new Faculty(CLI, agentFactory);</span>
+<span class="nc" id="L31">                case 3 -&gt; userCLI = new Student(CLI, agentFactory);</span>
+<span class="nc" id="L32">                default -&gt; CLI.dString(&quot;Invalid choice&quot;);</span>
+            }
+<span class="nc" id="L34">            userCLI.displayActionMenu();</span>
+<span class="nc" id="L35">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

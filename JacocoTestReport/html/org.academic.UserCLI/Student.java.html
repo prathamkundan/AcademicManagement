@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Student.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">MiniProjectFinal</a> &gt; <a href="index.source.html" class="el_package">org.academic.UserCLI</a> &gt; <span class="el_source">Student.java</span></div><h1>Student.java</h1><pre class="source lang-java linenums">package org.academic.UserCLI;
+
+import org.academic.Agents.AgentFactory;
+import org.academic.Agents.StudentAgent;
+import org.academic.ServicePack.DataObjects.RecordObject;
+import org.academic.CLI;
+import org.academic.ServicePack.DataObjects.CourseObject;
+import org.academic.ServicePack.DataObjects.SessionObject;
+import org.academic.ServicePack.DataObjects.UserObject;
+import org.academic.ServicePack.Utils.AppException;
+import org.academic.ServicePack.Utils.CourseType;
+import org.academic.ServicePack.Utils.Roles;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class Student extends BaseUser{
+    StudentAgent studentAgent;
+    public Student(CLI cli, AgentFactory agentFactory) throws AppException {
+<span class="fc" id="L20">        super(cli);</span>
+<span class="fc" id="L21">        this.studentAgent = agentFactory.getStudentAgent();</span>
+<span class="fc" id="L22">        setCommonAgent(studentAgent);</span>
+
+        try {
+<span class="fc" id="L25">            studentAgent.getCurrentSemesterData();</span>
+<span class="nc" id="L26">        } catch (AppException e) {</span>
+<span class="nc" id="L27">            CLI.dString(&quot;No semester found... Please contact your admin&quot;);</span>
+<span class="nc" id="L28">            return;</span>
+<span class="fc" id="L29">        }</span>
+
+<span class="fc" id="L31">        map_action(this::viewAvailableCourses,  &quot;View available courses&quot;);</span>
+<span class="fc" id="L32">        map_action(this::courseRegister,        &quot;Register for a course&quot;);</span>
+<span class="fc" id="L33">        map_action(this::courseDeregister,      &quot;Unregister from a course&quot;);</span>
+<span class="fc" id="L34">        map_action(this::viewUGStatus,          &quot;View UG Status&quot;);</span>
+<span class="fc" id="L35">    }</span>
+
+    public Roles getRole() {
+<span class="fc" id="L38">        return Roles.STUDENT;</span>
+    }
+
+    public void viewAvailableCourses() {
+        try {
+<span class="fc" id="L43">            ArrayList&lt;RecordObject&gt; available_courses = studentAgent.getAvailableCourses(sessionUser.user_id);</span>
+<span class="fc" id="L44">            RecordObject.header(false);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            for (RecordObject record : available_courses) {</span>
+<span class="fc" id="L46">                CLI.dString(record.format(false));</span>
+<span class="fc" id="L47">            }</span>
+<span class="fc" id="L48">        } catch (AppException ae) {</span>
+<span class="fc" id="L49">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L50">        }</span>
+<span class="fc" id="L51">    }</span>
+
+    public void courseRegister() {
+        try {
+<span class="fc" id="L55">            String course_id = CLI.scanString(&quot;Enter course code:&quot;);</span>
+<span class="fc" id="L56">            studentAgent.enrollCourse(sessionUser.user_id, course_id);</span>
+<span class="fc" id="L57">        } catch (AppException ae) {</span>
+<span class="fc" id="L58">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L59">        }</span>
+<span class="fc" id="L60">    }</span>
+
+    public void courseDeregister() {
+        try {
+<span class="fc" id="L64">            String course_id = CLI.scanString(&quot;Enter course id:&quot;);</span>
+<span class="fc" id="L65">            studentAgent.unEnrollCourse(sessionUser.user_id,course_id);</span>
+<span class="fc" id="L66">        } catch (AppException ae) {</span>
+<span class="fc" id="L67">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L68">        }</span>
+<span class="fc" id="L69">    }</span>
+
+    @Override
+    public void viewAcademicReport() {
+        try {
+<span class="fc" id="L74">            CLI.dString(&quot;User Details&quot;);</span>
+<span class="fc" id="L75">            CLI.dString(studentAgent.getUserObject(sessionUser.user_id).format());</span>
+<span class="fc" id="L76">            CLI.dString(&quot;\nAcademic Report:&quot;);</span>
+<span class="fc" id="L77">            ArrayList&lt;SessionObject&gt; semesters = studentAgent.getAllSemesterData();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            for (SessionObject semester : semesters) {</span>
+<span class="fc" id="L79">                CLI.dString(formattedSemesterReport(sessionUser.user_id, semester.year, semester.semester));</span>
+<span class="fc" id="L80">            }</span>
+<span class="fc" id="L81">            CLI.dString(&quot;CGPA:&quot; + studentAgent.getCGPA(sessionUser.user_id));</span>
+<span class="fc" id="L82">        } catch (AppException ae) {</span>
+<span class="fc" id="L83">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L84">        }</span>
+<span class="fc" id="L85">    }</span>
+
+    @Override
+    public void viewSemesterReport() {
+        try {
+<span class="fc" id="L90">            int year = CLI.scanInt(&quot;Enter a year:&quot;);</span>
+<span class="fc" id="L91">            int semester = CLI.scanInt(&quot;Enter a semester:&quot;);</span>
+<span class="fc" id="L92">            UserObject user = studentAgent.getUserObject(sessionUser.user_id);</span>
+<span class="fc" id="L93">            CLI.dString(user.format());</span>
+<span class="fc" id="L94">            CLI.dString(formattedSemesterReport(sessionUser.user_id, year, semester));</span>
+<span class="fc" id="L95">        } catch (AppException ae) {</span>
+<span class="fc" id="L96">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L97">        }</span>
+<span class="fc" id="L98">    }</span>
+
+    public void viewUGStatus() {
+        try {
+<span class="fc" id="L102">            HashMap&lt;CourseType, Integer&gt; curriculum = studentAgent.getRemainingUGCredits(sessionUser.user_id);</span>
+<span class="fc" id="L103">            CLI.dString(&quot;Credit Option\t Remaining Credits&quot;);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            for (CourseType type : curriculum.keySet()) {</span>
+<span class="fc" id="L105">                CLI.dString(type + &quot;:\t\t&quot; + curriculum.get(type));</span>
+<span class="fc" id="L106">            }</span>
+<span class="fc" id="L107">            ArrayList&lt;CourseObject&gt; courses = studentAgent.getRemainingCoreCourses(sessionUser.user_id);</span>
+<span class="fc" id="L108">            CLI.dString(&quot;Remaining Core Courses:&quot;);</span>
+<span class="fc" id="L109">            CLI.dString(CourseObject.header(true));</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            for (CourseObject course : courses) {</span>
+<span class="fc" id="L111">                CLI.dString(course.format(true));</span>
+<span class="fc" id="L112">            }</span>
+
+<span class="pc bpc" id="L114" title="1 of 4 branches missed.">            if (curriculum.size() == 0 &amp;&amp; courses.size() == 0) {</span>
+<span class="fc" id="L115">                CLI.dString(&quot;You are ready to graduate&quot;);</span>
+            }
+<span class="fc" id="L117">        } catch (AppException ae) {</span>
+<span class="fc" id="L118">            CLI.dError(ae, 3);</span>
+<span class="fc" id="L119">        }</span>
+<span class="fc" id="L120">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
